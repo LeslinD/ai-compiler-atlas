@@ -100,10 +100,15 @@ function readArchiveCards(html: string): ArchiveContent {
 }
 
 function DeepArticle({ paper }: { paper: DeepRead }) {
+  const coreSections = paper.sections.filter((section) => section.heading !== "与相关工作的关系" && section.heading !== "和你的研究的关系");
+  const relatedSections = paper.sections.filter((section) => section.heading === "与相关工作的关系");
+  const projectSections = paper.sections.filter((section) => section.heading === "和你的研究的关系");
+  const sections = [...coreSections, ...relatedSections, ...projectSections];
+
   return (
     <div className="paper-body deep-body">
       <p className="paper-meta">作者：{paper.authors}<br />版本：{paper.version}</p>
-      {paper.sections.map((section) => (
+      {sections.map((section) => (
         <section key={section.heading}>
           <h3>{section.heading}</h3>
           {section.paragraphs?.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
@@ -120,7 +125,14 @@ function DeepArticle({ paper }: { paper: DeepRead }) {
 
 function ArchiveArticle({ paper, content }: { paper: ArchivePaper; content?: string }) {
   if (content) {
-    return <div className="paper-body archive-body" dangerouslySetInnerHTML={{ __html: content }} />;
+    return (
+      <div className="paper-body archive-body">
+        <p className="archive-original-link">
+          <a href={"./historical-insights.html#" + paper.id}>打开原稿中的完整精读 ↗</a>
+        </p>
+        <div dangerouslySetInnerHTML={{ __html: content }} />
+      </div>
+    );
   }
   return (
     <div className="paper-body">
@@ -132,7 +144,7 @@ function ArchiveArticle({ paper, content }: { paper: ArchivePaper; content?: str
 
 function PaperArticle({ paper, archive }: { paper: ReadingPaper; archive?: string }) {
   return (
-    <article className="paper">
+    <article className="paper" id={paper.id}>
       <header className="paper-header">
         <p className="paper-count">论文</p>
         <h2>{paper.chineseTitle}</h2>
@@ -173,6 +185,7 @@ export default function Home() {
       <header className="masthead">
         <a className="wordmark" href="#top">AI 编译器论文阅读</a>
         <p>按日期阅读论文。</p>
+        <a className="archive-entry" href="./historical-insights.html">7 月 25 日至 8 月 1 日原始精读</a>
       </header>
 
       <div className="reading-layout" id="top">
