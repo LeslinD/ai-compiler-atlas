@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import history from "./history.json";
-import { currentPapers } from "./current";
+import { recentDeepReads, type DeepRead } from "./deep-reads";
+import { earlyDeepReads } from "./deep-reads-early";
 
 type HistoricPaper = {
   id: string;
@@ -13,23 +14,21 @@ type HistoricPaper = {
   readingDate: string;
 };
 
-type ReadingPaper = {
+type ArchivePaper = {
   id: string;
   date: string;
   title: string;
   chineseTitle: string;
   arxiv: string;
   source: string;
-  kind: "archive" | "note";
-  problem?: string;
-  method?: string[];
-  evidence?: string;
-  limitation?: string;
+  kind: "archive";
 };
+
+type ReadingPaper = ArchivePaper | (DeepRead & { kind: "deep" });
 
 type ArchiveContent = Record<string, string>;
 
-const archivedPapers: ReadingPaper[] = (history as HistoricPaper[]).map((paper) => ({
+const archivedPapers: ArchivePaper[] = (history as HistoricPaper[]).map((paper) => ({
   id: paper.id,
   date: paper.readingDate,
   title: paper.title,
@@ -39,109 +38,9 @@ const archivedPapers: ReadingPaper[] = (history as HistoricPaper[]).map((paper) 
   kind: "archive",
 }));
 
-function cleanEditorialPrefix(value: string) {
-  return value
-    .replace(/^【[^】]+】\s*/, "")
-    .replace(/不应直接等同。?$/, "仍需在对应场景中验证。")
-    .replace(/不自动证明/g, "还不能证明");
-}
+const deepPapers: ReadingPaper[] = [...earlyDeepReads, ...recentDeepReads].map((paper) => ({ ...paper, kind: "deep" }));
 
-const recentPapers: ReadingPaper[] = currentPapers.map((paper) => ({
-  id: paper.id,
-  date: paper.day,
-  title: paper.title,
-  chineseTitle: paper.chineseTitle,
-  arxiv: paper.arxiv,
-  source: paper.source,
-  kind: "note",
-  problem: paper.why,
-  method: paper.steps,
-  evidence: cleanEditorialPrefix(paper.evidence),
-  limitation: cleanEditorialPrefix(paper.boundary),
-}));
-
-const addedPapers: ReadingPaper[] = [
-  {
-    id: "leap",
-    date: "2026-08-03",
-    title: "LEAP: Lean Environment-Feedback via Adaptive Pruning for Code RL in GPU Kernel Generation",
-    chineseTitle: "LEAP：用环境反馈和自适应剪枝训练 GPU kernel 生成",
-    arxiv: "2608.01804",
-    source: "https://arxiv.org/abs/2608.01804",
-    kind: "note",
-    problem: "GPU kernel 的强化学习常被编译开销和稀疏的成败反馈拖慢。LEAP 讨论怎样保留最有训练价值的任务。",
-    method: ["按难度移除过易或明显无效的任务", "保留编译与执行带回的环境反馈", "用排序式奖励指导后续代码改进"],
-    evidence: "论文摘要将稀疏二元奖励和编译延迟列为训练瓶颈，并报告了更快的收敛与更稳定的调试过程。",
-    limitation: "摘要没有给出剪枝阈值、任务分布和跨硬件泛化的完整细节。",
-  },
-  {
-    id: "comfuse",
-    date: "2026-08-04",
-    title: "ComFuse: An Automated GPU Compiler for Fusing Complex Memory-Intensive and Compute-Intensive Kernels",
-    chineseTitle: "ComFuse：自动融合内存密集与计算密集 GPU kernel 的编译器",
-    arxiv: "2608.03537",
-    source: "https://arxiv.org/abs/2608.03537",
-    kind: "note",
-    problem: "复杂子图中的融合机会不只取决于算子是否相邻，还取决于内存访问和计算阶段能否重叠。",
-    method: ["识别可重叠的内存与计算阶段", "把子程序降为单个融合 kernel", "以端到端代价比较融合与未融合方案"],
-    evidence: "论文摘要说明系统会自动把复杂子程序降为融合 kernel，并与 TorchInductor 对照。",
-    limitation: "摘要没有展示各类图模式、编译时间和失败回退的完整分布。",
-  },
-  {
-    id: "unseen-delta",
-    date: "2026-08-10",
-    title: "The Unseen Delta: Top-Down Differential Analysis for Compiler Performance",
-    chineseTitle: "The Unseen Delta：面向编译器性能的自顶向下差分分析",
-    arxiv: "2608.09530",
-    source: "https://arxiv.org/abs/2608.09530",
-    kind: "note",
-    problem: "端到端吞吐差异往往不足以解释编译器究竟改变了哪段代码、为什么变快或变慢。",
-    method: ["采样找出决定性能的关键片段", "按微架构指标逐层比较两个编译结果", "移植关键二进制序列并检查性能是否随之改变"],
-    evidence: "论文摘要描述了分层微架构差分、关键片段采样和二进制 patching 的验证过程。",
-    limitation: "摘要不足以判断它对数值正确性、动态形状和非确定性负载的覆盖范围。",
-  },
-  {
-    id: "ppprobe",
-    date: "2026-08-11",
-    title: "Conflict Extraction in Probabilistic Datalog Analyses",
-    chineseTitle: "PPProbe：概率 Datalog 分析中的冲突抽取",
-    arxiv: "2608.10755",
-    source: "https://arxiv.org/abs/2608.10755",
-    kind: "note",
-    problem: "概率程序分析需要从大量可能推导中找出互相冲突的解释。",
-    method: ["把冲突形式化为极小不可满足集合", "用 Datalog 推导图引导搜索", "用自底向上的不可满足推断剪去冲突告警"],
-    evidence: "论文摘要在 70 个基准上报告，吞吐量比 MUS enumerator 高 2.5–24×，平均过滤 47.7% 的互相冲突告警。",
-    limitation: "它与 AI 编译器测试的直接联系尚未在论文摘要中展开；这里保留为相邻的程序分析阅读。",
-  },
-  {
-    id: "realistic-triton-bench",
-    date: "2026-08-12",
-    title: "RealisticTritonBench",
-    chineseTitle: "RealisticTritonBench：从真实 AI 框架 PR 提取 Triton kernel 任务",
-    arxiv: "2608.12004",
-    source: "https://arxiv.org/abs/2608.12004",
-    kind: "note",
-    problem: "合成 kernel 题目很难覆盖框架里的完整上下文、接口约束和端到端影响。",
-    method: ["从真实 AI 框架 PR 提取 Triton kernel 任务", "保留可复现实验环境", "在原框架中做端到端评测"],
-    evidence: "论文摘要指出，主流大模型在这些真实任务上仍然困难，并把框架内端到端评测作为任务的一部分。",
-    limitation: "基准的覆盖范围受所选框架和 PR 类型影响。",
-  },
-  {
-    id: "spec-sheets",
-    date: "2026-08-12",
-    title: "Spec Sheets Are Not Kernels",
-    chineseTitle: "规格表不是 kernel：审计 B300 的 INT8 可用性",
-    arxiv: "2608.11693",
-    source: "https://arxiv.org/abs/2608.11693",
-    kind: "note",
-    problem: "硬件规格中写有某种 INT8 能力，不代表软件栈已经能以可用的 kernel 形式调用它。",
-    method: ["沿规格表、PTX、CUTLASS、vLLM 与 SGLang 检查能力路径", "记录能力在哪一层缺失或不可达", "区分规格存在与软件可用"],
-    evidence: "论文摘要明确说明它没有做性能测量，重点是能力从规格到软件实现的可达性审计。",
-    limitation: "它回答可用性，不回答某条 kernel 路径的实际性能。",
-  },
-];
-
-const allPapers = [...archivedPapers, ...recentPapers, ...addedPapers];
+const allPapers: ReadingPaper[] = [...archivedPapers, ...deepPapers];
 
 const dateTitles: Record<string, string> = {
   "2026-07-25": "测试语义与半精度训练",
@@ -161,6 +60,8 @@ const dateTitles: Record<string, string> = {
   "2026-08-10": "通信协同与性能差分",
   "2026-08-11": "概率程序分析",
   "2026-08-12": "真实任务与硬件可用性",
+  "2026-08-13": "可检查的 kernel 演化",
+  "2026-08-14": "合同验证与真实状态回放",
 };
 
 function dateLabel(value: string) {
@@ -177,26 +78,19 @@ function readArchiveCards(html: string): ArchiveContent {
     card.querySelector("h2")?.remove();
     card.querySelectorAll(".review-box, textarea, label, .saved").forEach((node) => node.remove());
 
-    const children = Array.from(card.children);
-    let removeUntilNextHeading = false;
-    children.forEach((child) => {
+    Array.from(card.children).forEach((child) => {
       if (child.tagName === "H3") {
         const heading = child.textContent?.trim() ?? "";
-        removeUntilNextHeading = heading === "与相关工作的关系" || heading === "对研究方向的具体启发";
-        if (removeUntilNextHeading) {
-          child.remove();
-          return;
-        }
         const rename: Record<string, string> = {
           "先给结论": "概览",
           "读懂它需要的最少背景": "背景",
-          "3 分钟理解": "方法",
+          "3 分钟理解": "3 分钟理解",
           "关键机制再拆一层": "关键机制",
           "实验证据与边界": "实验与局限",
+          "对研究方向的具体启发": "和你的研究的关系",
         };
         child.textContent = rename[heading] ?? heading;
       }
-      if (removeUntilNextHeading) child.remove();
     });
 
     cards[sourceCard.id] = card.innerHTML;
@@ -205,32 +99,26 @@ function readArchiveCards(html: string): ArchiveContent {
   return cards;
 }
 
-function NoteArticle({ paper }: { paper: ReadingPaper }) {
+function DeepArticle({ paper }: { paper: DeepRead }) {
   return (
-    <div className="paper-body">
-      <section>
-        <h3>问题</h3>
-        <p>{paper.problem}</p>
-      </section>
-      <section>
-        <h3>方法</h3>
-        <ol className="method-list">
-          {paper.method?.map((step) => <li key={step}>{step}</li>)}
-        </ol>
-      </section>
-      <section>
-        <h3>实验说明了什么</h3>
-        <p>{paper.evidence}</p>
-      </section>
-      <section>
-        <h3>局限</h3>
-        <p>{paper.limitation}</p>
-      </section>
+    <div className="paper-body deep-body">
+      <p className="paper-meta">作者：{paper.authors}<br />版本：{paper.version}</p>
+      {paper.sections.map((section) => (
+        <section key={section.heading}>
+          <h3>{section.heading}</h3>
+          {section.paragraphs?.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
+          {section.bullets && (
+            <ul className="deep-list">
+              {section.bullets.map((bullet) => <li key={bullet}>{bullet}</li>)}
+            </ul>
+          )}
+        </section>
+      ))}
     </div>
   );
 }
 
-function ArchiveArticle({ paper, content }: { paper: ReadingPaper; content?: string }) {
+function ArchiveArticle({ paper, content }: { paper: ArchivePaper; content?: string }) {
   if (content) {
     return <div className="paper-body archive-body" dangerouslySetInnerHTML={{ __html: content }} />;
   }
@@ -253,7 +141,7 @@ function PaperArticle({ paper, archive }: { paper: ReadingPaper; archive?: strin
           arXiv {paper.arxiv} ↗
         </a>
       </header>
-      {paper.kind === "archive" ? <ArchiveArticle paper={paper} content={archive} /> : <NoteArticle paper={paper} />}
+      {paper.kind === "archive" ? <ArchiveArticle paper={paper} content={archive} /> : <DeepArticle paper={paper} />}
     </article>
   );
 }
@@ -284,7 +172,7 @@ export default function Home() {
     <main className="reading-site">
       <header className="masthead">
         <a className="wordmark" href="#top">AI 编译器论文阅读</a>
-        <p>按日整理，直接读论文。</p>
+        <p>按日期阅读论文。</p>
       </header>
 
       <div className="reading-layout" id="top">
