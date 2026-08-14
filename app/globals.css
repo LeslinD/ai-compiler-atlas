@@ -178,8 +178,22 @@ a:hover { color: #164561; }
 }
 
 .paper-body p, .archive-body p { margin: 0 0 15px; }
+.paper-body .paper-meta {
+  margin: 0 0 28px;
+  color: var(--muted);
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 13px;
+  line-height: 1.65;
+}
+.deep-body section:first-of-type p:first-of-type {
+  color: #272727;
+  font-size: 18px;
+  line-height: 1.8;
+}
 .method-list { margin: 0; padding-left: 1.4em; }
 .method-list li { padding-left: 0.25em; margin: 0 0 8px; }
+.deep-list { margin: 0; padding-left: 1.35em; }
+.deep-list li { margin: 0 0 8px; padding-left: 0.18em; }
 
 .archive-body .paper-meta, .archive-body .badge, .archive-body .tag,
 .archive-body .track-row, .archive-body .callout, .archive-body .paper-actions { display: none !important; }
