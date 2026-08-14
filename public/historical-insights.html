@@ -1,0 +1,1432 @@
+<!DOCTYPE html>
+
+<html data-theme="light" lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
+<meta content="2026 年 7 月 25 日至 8 月 1 日按日独立整理的 AI 编译器论文精读、横向比较与研究设计" name="description"/>
+<title>八天 AI 编译器论文洞察：2026-07-25 至 2026-08-01 每日独立精读与横向分析</title>
+<style>
+:root{
+  --bg:#f5f7fb;
+  --surface:#ffffff;
+  --surface-2:#f0f4f8;
+  --text:#172536;
+  --muted:#627184;
+  --line:#d8e0e9;
+  --primary:#235fa4;
+  --primary-2:#174675;
+  --accent:#0f766e;
+  --accent-2:#115e59;
+  --warn:#a16207;
+  --danger:#b42318;
+  --success:#1f7a4d;
+  --shadow:0 12px 32px rgba(30,51,76,.08);
+  --radius:16px;
+  --font-scale:1;
+}
+html[data-theme="dark"]{
+  --bg:#10151c;
+  --surface:#171e27;
+  --surface-2:#202a36;
+  --text:#e8eef6;
+  --muted:#aab8c7;
+  --line:#344254;
+  --primary:#79b8ff;
+  --primary-2:#a9d1ff;
+  --accent:#5eead4;
+  --accent-2:#99f6e4;
+  --warn:#facc15;
+  --danger:#fda4af;
+  --success:#86efac;
+  --shadow:0 16px 40px rgba(0,0,0,.25);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;background:var(--bg)}
+body{
+  margin:0;
+  color:var(--text);
+  background:var(--bg);
+  font-family:"Noto Sans SC","PingFang SC","Microsoft YaHei",system-ui,-apple-system,sans-serif;
+  font-size:calc(16px * var(--font-scale));
+  line-height:1.78;
+}
+a{color:var(--primary);text-decoration:none}
+a:hover{text-decoration:underline}
+button,input{font:inherit}
+#scroll-progress{
+  position:fixed;left:0;top:0;height:3px;width:0;
+  background:linear-gradient(90deg,var(--primary),var(--accent));
+  z-index:1000;
+}
+.site-header{
+  position:sticky;top:0;z-index:900;
+  backdrop-filter:blur(16px);
+  background:color-mix(in srgb,var(--surface) 88%,transparent);
+  border-bottom:1px solid var(--line);
+}
+.header-inner{
+  max-width:1480px;margin:0 auto;padding:10px 22px;
+  display:flex;align-items:center;gap:18px;
+}
+.brand{display:flex;align-items:center;gap:10px;color:var(--text);min-width:235px}
+.brand-mark{
+  width:38px;height:38px;border-radius:10px;
+  display:grid;place-items:center;
+  color:white;font-weight:800;
+  background:linear-gradient(135deg,var(--primary),var(--accent));
+}
+.brand-text{display:flex;flex-direction:column;line-height:1.18}
+.brand-text span{font-size:.78rem;color:var(--muted);margin-top:3px}
+.top-nav{
+  flex:1;display:flex;gap:6px;overflow-x:auto;scrollbar-width:none
+}
+.top-nav a{
+  padding:7px 10px;border-radius:8px;white-space:nowrap;
+  color:var(--muted);font-size:.9rem
+}
+.top-nav a:hover,.top-nav a.active{background:var(--surface-2);color:var(--primary);text-decoration:none}
+.tools{display:flex;gap:6px}
+.tool-button{
+  border:1px solid var(--line);background:var(--surface);color:var(--text);
+  padding:7px 10px;border-radius:8px;cursor:pointer
+}
+.tool-button:hover{border-color:var(--primary);color:var(--primary)}
+.layout{
+  max-width:1480px;margin:0 auto;
+  display:grid;grid-template-columns:270px minmax(0,1fr);
+  gap:28px;padding:28px 22px 80px;
+}
+.sidebar{
+  position:sticky;top:82px;align-self:start;
+  max-height:calc(100vh - 100px);overflow:auto;
+  padding:18px;border-radius:var(--radius);
+  border:1px solid var(--line);background:var(--surface);
+}
+.sidebar h3{margin:0 0 10px;font-size:.98rem}
+.sidebar ul{list-style:none;padding:0;margin:0}
+.sidebar li{margin:2px 0}
+.sidebar a{
+  display:block;padding:6px 8px;border-radius:7px;
+  color:var(--muted);font-size:.87rem;line-height:1.4
+}
+.sidebar a:hover{background:var(--surface-2);color:var(--primary);text-decoration:none}
+.sidebar .toc-sub a{padding-left:18px;font-size:.82rem}
+.main{min-width:0}
+.reading{
+  max-width:1080px;margin:0 auto;
+  padding:40px 48px 64px;
+  border:1px solid var(--line);border-radius:22px;
+  background:var(--surface);box-shadow:var(--shadow);
+}
+.hero{
+  padding:34px;border-radius:20px;
+  background:
+    radial-gradient(circle at 100% 0%,color-mix(in srgb,var(--accent) 14%,transparent),transparent 38%),
+    linear-gradient(135deg,color-mix(in srgb,var(--primary) 9%,var(--surface)),var(--surface));
+  border:1px solid color-mix(in srgb,var(--primary) 22%,var(--line));
+  margin-bottom:34px;
+}
+.eyebrow{
+  color:var(--primary);font-size:.82rem;font-weight:800;
+  letter-spacing:.09em;text-transform:uppercase
+}
+.hero h1{margin:.35rem 0 .7rem;font-size:clamp(2rem,4vw,3.35rem);line-height:1.18}
+.hero p{font-size:1.08rem;color:var(--muted);margin:.5rem 0}
+.hero-meta,.paper-meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:18px}
+.tag,.badge{
+  display:inline-flex;align-items:center;padding:4px 9px;border-radius:999px;
+  font-size:.78rem;font-weight:700;border:1px solid var(--line);
+  background:var(--surface);color:var(--muted)
+}
+.tag.primary{color:var(--primary);border-color:color-mix(in srgb,var(--primary) 35%,var(--line))}
+.tag.accent{color:var(--accent);border-color:color-mix(in srgb,var(--accent) 35%,var(--line))}
+.badge.strong{color:var(--success)}
+.badge.medium{color:var(--warn)}
+.badge.early{color:var(--danger)}
+h1,h2,h3,h4{line-height:1.35;scroll-margin-top:92px}
+h2{margin:2.4rem 0 1rem;font-size:1.7rem;border-bottom:1px solid var(--line);padding-bottom:.45rem}
+h3{margin:1.65rem 0 .7rem;font-size:1.25rem}
+h4{margin:1.25rem 0 .45rem;font-size:1.04rem}
+p{margin:.75rem 0}
+ul,ol{padding-left:1.45rem}
+li{margin:.38rem 0}
+strong{color:color-mix(in srgb,var(--text) 94%,var(--primary))}
+code{
+  padding:.08em .35em;border-radius:5px;
+  background:var(--surface-2);
+  font-family:"SFMono-Regular",Consolas,monospace;font-size:.92em
+}
+pre{
+  overflow:auto;padding:16px;border-radius:12px;
+  background:#0f172a;color:#e2e8f0;border:1px solid #334155;
+  line-height:1.55
+}
+hr{border:0;border-top:1px solid var(--line);margin:3rem 0}
+.metrics,.grid{
+  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px
+}
+.metric,.card{
+  border:1px solid var(--line);border-radius:14px;padding:16px;
+  background:var(--surface)
+}
+.metric strong{display:block;font-size:1.65rem;color:var(--primary)}
+.metric span{color:var(--muted);font-size:.86rem}
+.grid.two{grid-template-columns:repeat(2,minmax(0,1fr))}
+.grid.three{grid-template-columns:repeat(3,minmax(0,1fr))}
+.timeline{display:grid;gap:12px}
+.timeline-item{
+  display:grid;grid-template-columns:116px minmax(0,1fr);gap:16px;
+  padding:14px 16px;border-left:4px solid var(--primary);
+  border-radius:0 12px 12px 0;background:var(--surface-2)
+}
+.timeline-item .date{font-weight:800;color:var(--primary)}
+.timeline-item p{margin:0}
+.callout{
+  margin:1.2rem 0;padding:15px 17px;border-radius:12px;
+  border-left:4px solid var(--primary);background:color-mix(in srgb,var(--primary) 7%,var(--surface))
+}
+.callout.key{border-left-color:var(--accent);background:color-mix(in srgb,var(--accent) 8%,var(--surface))}
+.callout.warn{border-left-color:var(--warn);background:color-mix(in srgb,var(--warn) 8%,var(--surface))}
+.callout.danger{border-left-color:var(--danger);background:color-mix(in srgb,var(--danger) 7%,var(--surface))}
+.paper-card{
+  margin:1.6rem 0 2.3rem;padding:24px;border-radius:18px;
+  border:1px solid var(--line);
+  background:linear-gradient(180deg,color-mix(in srgb,var(--primary) 3%,var(--surface)),var(--surface));
+}
+.paper-card h2{margin-top:0;font-size:1.48rem}
+.paper-card .source-row{color:var(--muted);font-size:.9rem}
+.summary-line{
+  padding:13px 15px;border-radius:11px;background:var(--surface-2);
+  font-weight:700
+}
+.steps{display:grid;gap:10px;margin:1rem 0}
+.step{
+  position:relative;padding:13px 14px 13px 48px;border-radius:11px;
+  background:var(--surface-2);border:1px solid var(--line)
+}
+.step::before{
+  content:attr(data-step);position:absolute;left:14px;top:12px;
+  width:24px;height:24px;display:grid;place-items:center;
+  border-radius:50%;background:var(--primary);color:white;font-size:.78rem;font-weight:800
+}
+.filter-shell{
+  position:sticky;top:61px;z-index:500;
+  padding:12px;margin:1rem 0 1.6rem;
+  border:1px solid var(--line);border-radius:13px;
+  background:color-mix(in srgb,var(--surface) 94%,transparent);
+  backdrop-filter:blur(10px)
+}
+.filter-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.search-input{
+  flex:1;min-width:240px;padding:9px 12px;border:1px solid var(--line);
+  border-radius:9px;background:var(--surface);color:var(--text)
+}
+.filter-button{
+  border:1px solid var(--line);background:var(--surface);
+  color:var(--muted);padding:7px 10px;border-radius:8px;cursor:pointer
+}
+.filter-button.active,.filter-button:hover{color:var(--primary);border-color:var(--primary)}
+.paper-index-card{transition:.18s ease}
+.paper-index-card.hidden{display:none}
+.paper-index-card h3{margin:.1rem 0 .45rem;font-size:1.03rem}
+.paper-index-card p{color:var(--muted);font-size:.91rem;margin:.45rem 0}
+.paper-index-card .date{font-size:.78rem;color:var(--primary);font-weight:800}
+.table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:13px}
+table{width:100%;border-collapse:collapse;min-width:780px;font-size:.9rem}
+th,td{padding:11px 12px;border-bottom:1px solid var(--line);vertical-align:top;text-align:left}
+th{background:var(--surface-2);color:var(--text);position:sticky;top:0}
+tr:last-child td{border-bottom:0}
+tr:hover td{background:color-mix(in srgb,var(--primary) 3%,var(--surface))}
+details{
+  margin:.8rem 0;border:1px solid var(--line);border-radius:12px;
+  background:var(--surface)
+}
+summary{
+  cursor:pointer;padding:12px 14px;font-weight:800;color:var(--primary)
+}
+details>div{padding:0 15px 14px}
+.review-box{
+  margin-top:18px;padding:14px;border:1px dashed var(--line);
+  border-radius:12px;background:var(--surface-2)
+}
+.review-box label{display:block;font-weight:800;margin-bottom:7px}
+.review-box textarea{
+  width:100%;min-height:84px;resize:vertical;padding:10px;
+  border:1px solid var(--line);border-radius:8px;
+  background:var(--surface);color:var(--text)
+}
+.review-box .saved{font-size:.76rem;color:var(--muted);margin-top:4px}
+.system-layers{counter-reset:layer;display:grid;gap:10px}
+.system-layer{
+  counter-increment:layer;display:grid;grid-template-columns:42px 190px 1fr;
+  gap:12px;align-items:start;padding:14px;border:1px solid var(--line);
+  border-radius:12px;background:var(--surface)
+}
+.system-layer::before{
+  content:counter(layer);width:32px;height:32px;display:grid;place-items:center;
+  border-radius:9px;background:var(--primary);color:white;font-weight:800
+}
+.system-layer strong{font-size:.98rem}
+.system-layer span{color:var(--muted)}
+.relation{
+  padding:17px;border-radius:13px;border:1px solid var(--line);
+  background:var(--surface)
+}
+.relation .arrow{color:var(--accent);font-weight:900}
+.artifact{
+  padding:18px;border:1px solid var(--line);border-radius:14px;background:var(--surface)
+}
+.artifact h3{margin-top:0;color:var(--primary)}
+.glossary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.glossary article{
+  padding:14px;border:1px solid var(--line);border-radius:12px;background:var(--surface)
+}
+.glossary h3{font-size:1rem;margin:0 0 .35rem}
+.glossary p{font-size:.9rem;color:var(--muted);margin:0}
+.footer{
+  max-width:1080px;margin:18px auto 0;text-align:center;color:var(--muted);font-size:.82rem
+}
+.back-top{
+  position:fixed;right:22px;bottom:22px;width:42px;height:42px;border-radius:50%;
+  border:1px solid var(--line);background:var(--surface);color:var(--primary);
+  cursor:pointer;box-shadow:var(--shadow);display:none
+}
+.back-top.show{display:block}
+@media(max-width:1050px){
+  .layout{grid-template-columns:1fr}
+  .sidebar{display:none}
+  .reading{padding:32px 28px}
+  .metrics{grid-template-columns:repeat(2,1fr)}
+  .grid.three{grid-template-columns:repeat(2,1fr)}
+}
+@media(max-width:720px){
+  .header-inner{padding:8px 12px}
+  .brand{min-width:auto}.brand-text span{display:none}
+  .tools .tool-button:nth-child(-n+2){display:none}
+  .layout{padding:14px 10px 60px}
+  .reading{padding:24px 18px;border-radius:14px}
+  .hero{padding:22px}
+  .metrics,.grid.two,.grid.three,.glossary{grid-template-columns:1fr}
+  .timeline-item{grid-template-columns:1fr}
+  .system-layer{grid-template-columns:36px 1fr}
+  .system-layer span{grid-column:2}
+  .filter-shell{top:56px}
+}
+@media print{
+  .site-header,.sidebar,.filter-shell,.review-box,.back-top,#scroll-progress{display:none!important}
+  body{background:white;color:#111;font-size:10.5pt}
+  .layout{display:block;padding:0}.reading{max-width:none;border:0;box-shadow:none;padding:0}
+  .paper-card,.card,.artifact,details{break-inside:avoid}
+  details>div{display:block!important}
+  a{color:inherit}
+}
+@media(prefers-reduced-motion:reduce){
+  *{scroll-behavior:auto!important;transition:none!important}
+}
+
+
+.day-section{scroll-margin-top:90px}
+.day-section>h2{margin-top:16px;padding-top:8px}
+.paper-card.hidden,.day-section.hidden{display:none!important}
+.top-nav{scrollbar-width:thin}
+.paper-card h3{scroll-margin-top:92px}
+@media (max-width:920px){.top-nav{max-width:55vw}.day-section>h2{font-size:1.35rem}}
+</style>
+</head>
+<body>
+<div id="scroll-progress"></div>
+<header class="site-header">
+<div class="header-inner">
+<a class="brand" href="#overview">
+<div class="brand-mark">AI</div>
+<div class="brand-text"><strong>Daily AI Compiler</strong><span>2026-07-25 至 2026-08-01 · 每日独立精读</span></div>
+</a>
+<nav aria-label="主导航" class="top-nav"><a href="#overview">总览</a><a href="#day-0725">7/25</a><a href="#day-0726">7/26</a><a href="#day-0727">7/27</a><a href="#day-0728">7/28</a><a href="#day-0729">7/29</a><a href="#day-0730">7/30</a><a href="#day-0731">7/31</a><a href="#day-0801">8/1</a><a href="#comparison">横向分析</a><a href="#artifacts">研究产物</a><a href="#glossary">术语表</a></nav>
+<div class="tools">
+<button class="tool-button" data-action="font-down" title="减小字号">A−</button>
+<button class="tool-button" data-action="font-up" title="增大字号">A+</button>
+<button class="tool-button" data-action="theme" title="切换深浅色">◐</button>
+<button class="tool-button" data-action="print" title="打印或导出 PDF">打印</button>
+</div>
+</div>
+</header>
+<div class="layout">
+<aside class="sidebar"><h3>本页目录</h3><ul><li><a href="#overview">八天总览</a></li><li class="toc-sub"><a href="#eight-layers">八层系统结构</a></li><li><a href="#day-0725">7 月 25 日</a></li><li><a href="#day-0726">7 月 26 日</a></li><li><a href="#day-0727">7 月 27 日</a></li><li><a href="#day-0728">7 月 28 日</a></li><li><a href="#day-0729">7 月 29 日</a></li><li><a href="#day-0730">7 月 30 日</a></li><li><a href="#day-0731">7 月 31 日</a></li><li><a href="#day-0801">8 月 1 日</a></li><li><a href="#comparison">横向分析</a></li><li class="toc-sub"><a href="#all-matrix">论文比较矩阵</a></li><li class="toc-sub"><a href="#relations">关键关系</a></li><li class="toc-sub"><a href="#gaps">研究空缺</a></li><li><a href="#artifacts">研究产物</a></li><li><a href="#glossary">术语表</a></li></ul></aside>
+<main class="main">
+<div class="reading">
+<section id="overview">
+<div class="hero">
+<div class="eyebrow">单文件完整阅读版 · 2026 年 7 月 25 日至 8 月 1 日</div>
+<h1>八天 AI 编译器论文洞察</h1>
+<p>网页按阅读日期组织。每一天独立选择当日最值得理解的论文，并使用相同的讲解结构说明背景、问题、方法、完整例子、实验边界和研究启发。日期之间不设置高低层级，也不按生成批次分组。</p>
+<div class="hero-meta">
+<span class="tag primary">8 个独立日期</span>
+<span class="tag accent">20 篇高相关论文</span>
+<span class="tag">5 条研究主线</span>
+<span class="tag">无外部图片依赖</span>
+<span class="tag">支持筛选、搜索与本地笔记</span>
+</div>
+</div>
+<div class="metrics">
+<div class="metric"><strong>8</strong><span>逐日独立阅读单元</span></div>
+<div class="metric"><strong>20</strong><span>完整论文讲解</span></div>
+<div class="metric"><strong>8</strong><span>可靠系统功能层</span></div>
+<div class="metric"><strong>12</strong><span>可继续使用的研究设计</span></div>
+</div>
+<div class="callout key"><strong>阅读方法</strong><br/>
+  可以按日期顺序阅读，也可以使用下方筛选器只查看 TileLang-TPU、Tile for DSA、Tile Fuzz、Agent kernel DSL 或 unsafe Rust。每篇论文都先回答它处理什么输入、改变什么机制、得到什么结果，再进入细节。</div>
+<div class="filter-shell">
+<div class="filter-row">
+<input class="search-input" id="paper-search" placeholder="搜索论文、硬件、方法或研究方向……" type="search"/>
+<button class="filter-button active" data-filter="all">全部</button>
+<button class="filter-button" data-filter="Tile Fuzz">Tile Fuzz</button>
+<button class="filter-button" data-filter="Agent DSL">Agent kernel DSL</button>
+<button class="filter-button" data-filter="Tile for DSA">Tile for DSA</button>
+<button class="filter-button" data-filter="TileLang-TPU">TileLang-TPU</button>
+<button class="filter-button" data-filter="unsafe Rust">unsafe Rust</button>
+</div>
+</div>
+<h2 id="eight-layers">八天论文形成的八层系统</h2>
+<div class="system-layers">
+<div class="system-layer"><strong>场景与任务</strong><span>从真实 API、仓库历史、工作负载和用户目标恢复可执行场景，防止 Agent 自行改写任务。</span></div>
+<div class="system-layer"><strong>行为与安全规格</strong><span>明确输入、输出、边界、错误、资源和证明条件，并修复规格中的矛盾与缺失。</span></div>
+<div class="system-layer"><strong>候选生成</strong><span>在受约束 DSL、调度模板、kernel 库或硬件设计空间中产生代码、测试与放置方案。</span></div>
+<div class="system-layer"><strong>确定性验证</strong><span>编译器、形式工具、差分测试、状态模型和生命周期检查独立判断正确性。</span></div>
+<div class="system-layer"><strong>硬件事实</strong><span>微基准、波形、profiler、RTL 和真实设备测量提供拓扑、带宽、延迟与容量。</span></div>
+<div class="system-layer"><strong>预测与归因</strong><span>tile 性能模型筛选候选，分层诊断解释慢因，数值归因区分差异来源和真实后果。</span></div>
+<div class="system-layer"><strong>运行时选择与迁移</strong><span>依据 shape、分布、阶段、设备争用、布局和请求状态选择或迁移实现。</span></div>
+<div class="system-layer"><strong>证据、任务与预算</strong><span>保存历史候选和真实变更，构建可执行 benchmark，并按停滞程度增加分析和推理成本。</span></div>
+</div>
+<h2>八天时间线</h2>
+<div class="timeline">
+<div class="timeline-item"><div class="date">7 月 25 日</div><p>用资源状态固定并发测试语义，并建立标准 RISC-V 半精度训练路径。</p></div>
+<div class="timeline-item"><div class="date">7 月 26 日</div><p>把 kernel 生成者与评测裁判分开，用全工作负载证据决定候选晋升。</p></div>
+<div class="timeline-item"><div class="date">7 月 27 日</div><p>从微基准恢复隐藏存储拓扑，并把硬件波形整理成可验证的时序证据。</p></div>
+<div class="timeline-item"><div class="date">7 月 28 日</div><p>用 tile 统一性能分析，以运行时监控支持异构调度，并从文档恢复安全规格。</p></div>
+<div class="timeline-item"><div class="date">7 月 29 日</div><p>用编译证据解释 kernel 性能，按真实 MoE 分布分派实现，并从测试恢复验证场景。</p></div>
+<div class="timeline-item"><div class="date">7 月 30 日</div><p>以真实缺陷分类指导前端测试，联合优化异构放置和权重布局，并修复不完整规格。</p></div>
+<div class="timeline-item"><div class="date">7 月 31 日</div><p>在编码前恢复行为规格，处理运行时迁移、数值归因和 Agent 推理预算。</p></div>
+<div class="timeline-item"><div class="date">8 月 1 日</div><p>共同设计稀疏 ISA 与编译映射，并从仓库历史构造现代可执行 Agent 任务。</p></div>
+</div>
+</section>
+<section class="day-section" id="day-0725">
+<h2>7 月 25 日｜测试语义与标准半精度训练路径</h2>
+<div class="callout key"><strong>当日研究信号</strong><br/>当天两篇论文分别处理“测试怎样保持语义”和“软件怎样稳定使用新硬件能力”。共同结论是，先建立可检查的中间合同，再让大模型或硬件实现承担具体执行，能够减少自由生成和专用实现带来的不确定性。</div>
+<article class="paper-card" data-search="From Resource Flow to Executable Tests 先用资源流和并发关系确定测试场景，再让大模型完成 Rust 代码实现 Tile Fuzz unsafe Rust" data-track="Tile Fuzz unsafe Rust" id="resource-flow-tests">
+<h2>From Resource Flow to Executable Tests</h2>
+<div class="paper-meta"><span class="tag primary">Tile Fuzz</span><span class="tag">并发 Rust 测试</span><span class="badge early">语义模型与可执行测试原型</span></div>
+<p class="source-row"><strong>中文理解：</strong>先用资源流和并发关系确定测试场景，再让大模型完成 Rust 代码实现<br/>
+<strong>论文版本：</strong>arXiv:2607.21530v1，2026 年 7 月 23 日<br/>
+<strong>来源：</strong><a href="https://arxiv.org/abs/2607.21530" rel="noopener" target="_blank">arXiv 论文页</a></p>
+<h3>先给结论</h3>
+<p class="summary-line">输入是并发有状态 Rust API 的资源、生命周期和允许的操作；系统先用 Petri 网构造合法、接近非法和高冲突的并发场景，再约束大模型把场景写成可执行测试；输出是保留原场景意图的 Rust 测试和分层判定结果。</p>
+<h3>读懂它需要的最少背景</h3>
+<p>并发有状态 API 的行为会随着资源状态不断变化。例如一个有界通道可能处于可发送、已满、已关闭或等待接收等状态。测试还要考虑多个线程的操作顺序。只给大模型一个函数签名，它很容易生成违反前置条件的调用，也可能把并发代码写成实际串行执行。</p>
+<p>Petri 网（Petri Net）是一种表示资源状态和事件关系的模型。圆点或位置表示状态，变迁表示可以发生的操作，令牌表示当前有哪些资源。它适合描述“发送后通道变满”“接收后容量释放”这类状态变化。</p>
+<h3>3 分钟理解</h3>
+<p><strong>总览。</strong>这篇论文把测试生成拆成两项工作。语义模型决定测试要经历哪些状态、哪些操作能够并发、哪些顺序必须保持；大模型只负责把这个已经确定的场景写成 Rust 代码。这样，测试的深度和并发性由模型控制，代码实现的低成本由大模型提供。</p>
+<p><strong>旧方法。</strong>纯大模型生成通常从 API 文档和函数签名直接写测试。以容量为 1 的异步通道为例，模型可能连续执行两次发送，却没有安排接收者释放容量；也可能先等待接收再创建发送任务，导致测试阻塞。另一类模型驱动测试可以精确枚举状态，但研究者往往要手工编写大量适配代码，才能把抽象路径变成 Tokio 或 Loom 可以运行的测试。</p>
+<p><strong>问题位置。</strong>真正缺失的部分位于抽象场景和可执行代码之间。抽象模型知道测试想表达什么，大模型知道 Rust 代码怎样写，但两者没有稳定接口。只在生成后检查编译和结果，无法保证代码仍然保持原来的并发关系。</p>
+<p><strong>新方法的总思路。</strong>作者把 Petri 网产生的场景变成受约束的中间表示。中间表示规定资源状态、事件、因果关系和允许交换顺序的操作。大模型可以选择具体变量、任务和 API 写法，但不能改变这些核心关系。</p>
+<div class="steps">
+<div class="step" data-step="1"><strong>建立资源模型。</strong>把通道、锁、句柄或连接的生命周期编码为带颜色令牌。颜色用于区分不同资源实例和状态。</div>
+<div class="step" data-step="2"><strong>生成场景。</strong>从模型中导出合法深状态场景、只差一个条件就非法的边界场景，以及包含可交换事件的部分序并发场景。</div>
+<div class="step" data-step="3"><strong>约束代码生成。</strong>把场景交给大模型，并用局部忠实性合同规定每个关键事件必须出现，事件间的因果关系不能被改写。</div>
+<div class="step" data-step="4"><strong>结构修复和调度塑形。</strong>若代码丢失任务、屏障或事件，系统只修复结构。随后优先探索冲突较强的合法调度，而不是随机运行一次。</div>
+<div class="step" data-step="5"><strong>分层判定。</strong>分别判断代码是否成功生成、是否保持场景结构、结果和不变量是否正确，以及是否出现死锁或活锁。</div>
+</div>
+<p><strong>完整例子。</strong>设有一个容量为 1 的 Tokio MPSC 通道。场景要求生产者发送消息 A，消费者接收 A，另一个生产者发送 B，最后关闭通道。A 的发送必须先于 A 的接收，B 的发送要等容量释放，但关闭与部分读取操作可能存在两种合法顺序。Petri 网先给出这两种线性化。大模型再生成两个异步任务和必要的同步点。若模型把两次发送写在同一任务里并等待完成，结构检查会发现并发关系被压扁；若模型遗漏关闭操作，也会在场景忠实性检查中被拒绝。</p>
+<p><strong>回扣。</strong>方法有效的原因是，它把“测试语义”从代码生成者手里拿出来，变成独立可检查的约束。它依赖较准确的 API 状态模型，也需要测试框架能够控制并观察调度。模型不完整时，生成的测试仍可能遗漏真实行为。</p>
+<h3>关键机制再拆一层</h3>
+<p>关键机制是<strong>部分序场景</strong>。测试不必提前固定所有线程的全局顺序，只固定真正的因果关系。这样既避免生成非法调用，又保留并发调度的变化空间。</p>
+<p>另一个关键点是<strong>分层 oracle</strong>。生成失败、场景失真、API 语义错误和活性错误被分别记录。否则，一个无法编译的测试和一个发现死锁的测试会被混在同一失败类别中。</p>
+<h3>实验证据与边界</h3>
+<p>论文给出的评估是可行性验证。作者在一个容量为 1 的 Tokio MPSC 场景中使用 7 个事件，模型推导出恰好 2 种合法线性化。实验重复 3 次，每次产生 14 条结构化记录，所有结构和语义检查通过，没有发现目标库缺陷。</p>
+<p>这些数字只能说明端到端流程能够运行。论文没有大型 API 集合、缺陷注入、纯提示词基线或不同调度策略的系统比较，因此目前不能判断它比成熟并发测试工具多发现多少错误。</p>
+<h3>与相关工作的关系</h3>
+<p>与普通基于性质的测试相比，这项工作更强调资源生命周期和并发关系。与 Loom 等系统化并发测试相比，它负责生成具有明确语义目标的测试骨架，Loom 仍可负责调度探索。</p>
+<p>它也补充了 HarnessLLM 一类从已有测试恢复调用场景的方法。已有测试提供真实使用方式，Petri 网可以进一步把这些方式扩展成新的状态和并发组合。</p>
+<h3>对研究方向的具体启发</h3>
+<p><strong>主方向是 Tile Fuzz。</strong>可以为 TileLang kernel 建立类似的资源状态模型。令牌表示全局内存 tile、正在传输的 tile、LMEM 中可读 tile、计算中的 tile 和可复用 buffer。变迁表示 DMA、计算、同步和覆盖。随后从模型中生成合法流水、接近非法的依赖缺失，以及高冲突的 buffer 复用测试。</p>
+<p><strong>次方向是 LLM for unsafe Rust。</strong>unsafe 并发 API 的验证入口可以先由状态模型决定，再让大模型完成具体对象构造，减少无效 harness。</p>
+<div class="review-box">
+<label>审阅笔记</label>
+<textarea data-note-key="resource-flow-tests" placeholder="可记录：哪些 TileLang buffer 状态最适合先建模？怎样定义接近非法但仍可执行的场景？"></textarea>
+<div class="saved">笔记仅保存在当前浏览器</div>
+</div>
+</article>
+<article class="paper-card" data-search="Hardware-Software Co-Design for Float16 On-Device Training on RISC-V Single-Core 用标准 RISC-V 半精度扩展支持资源受限设备上的完整训练 Tile for DSA" data-track="Tile for DSA" id="riscv-fp16-odt">
+<h2>Hardware-Software Co-Design for Float16 On-Device Training on RISC-V Single-Core</h2>
+<div class="paper-meta"><span class="tag primary">Tile for DSA</span><span class="tag">RISC-V 半精度训练</span><span class="badge medium">完整软件路径，向量性能仍待实测</span></div>
+<p class="source-row"><strong>中文理解：</strong>用标准 RISC-V 半精度扩展支持资源受限设备上的完整训练<br/>
+<strong>论文版本：</strong>arXiv:2607.21130v1，2026 年 7 月 23 日<br/>
+<strong>来源：</strong><a href="https://arxiv.org/abs/2607.21130" rel="noopener" target="_blank">arXiv 论文页</a></p>
+<h3>先给结论</h3>
+<p class="summary-line">输入是资源有限的单核 RISC-V 平台和需要本地训练的神经网络；系统扩展嵌入式训练框架，使模型、梯度和优化器能够使用 float16，并连接标准 Zfh 与 Zvfh 指令；输出是内存约减半、精度基本保持的完整训练路径和对应硬件代价分析。</p>
+<h3>读懂它需要的最少背景</h3>
+<p>设备端训练（On-Device Training）指模型在终端本地完成微调或持续学习。它可以保护数据隐私并减少网络依赖，但训练需要保存权重、梯度、激活和优化器状态，内存压力远高于推理。</p>
+<p>RISC-V 的 Zfh 扩展提供标量半精度浮点指令，Zvfh 提供向量半精度能力。使用标准扩展的好处是软件接口更稳定，但标准指令存在并不自动代表训练框架已经支持完整反向传播，也不代表性能一定理想。</p>
+<h3>3 分钟理解</h3>
+<p><strong>总览。</strong>论文以 AIfES 嵌入式训练框架为基础，把 float16 从一个存储格式扩展成完整训练数据类型。系统补齐前向、反向、优化器、模型转换和层冻结，并给出 Zfh 标量实现和 Zvfh 向量实现方案。结果是模型和主要工作区约减少一半，同时维持接近 float32 的任务精度。</p>
+<p><strong>旧方法。</strong>资源受限设备常使用 float32 训练。一个 10 万参数模型仅权重就需要约 400 KB，训练还需梯度和中间状态。改用 float16 存储可以减半，但如果每个算子都临时转回 float32，转换和工作区会抵消收益。另一种做法是开发专用训练加速器，但软件会绑定特定硬件。</p>
+<p><strong>问题位置。</strong>半精度训练的困难位于完整软件路径。只有矩阵乘支持 float16 还不够，损失函数、反向传播、参数更新、模型导入和冻结层都必须保持一致。论文改变的假设是，资源受限训练不一定需要专用 ISA，可以先围绕标准 RISC-V 扩展建立可移植基线。</p>
+<div class="steps">
+<div class="step" data-step="1"><strong>扩展训练框架。</strong>在 AIfES 中加入 float16 张量和算子接口，使前向、梯度和优化器状态可以按统一类型流动。</div>
+<div class="step" data-step="2"><strong>加入模型转换。</strong>把已有 float32 模型转换成 float16 参数，并保留层结构和训练配置。</div>
+<div class="step" data-step="3"><strong>支持层冻结。</strong>微调时只为可训练层保存梯度和更新状态，进一步减少内存和计算。</div>
+<div class="step" data-step="4"><strong>映射标准指令。</strong>标量路径使用 Zfh，向量路径按 Zvfh 设计批量加载、计算和存储。</div>
+<div class="step" data-step="5"><strong>验证训练结果和硬件代价。</strong>比较数据集精度、模型内存和在 FPGA 软核中加入 Zfh 的逻辑资源开销。</div>
+</div>
+<p><strong>完整例子。</strong>论文训练一个五层多层感知机，批大小为 128，训练 20 个 epoch。权重、梯度和主要工作区改为 float16 后，模型内存由约 100.85 KB 降为 50.43 KB。使用 SGD 时，MNIST 精度从 float32 的 96.88% 变为 float16 的 97.29%；使用 Adam 时从 97.32% 变为 96.78%。这说明精度变化较小，但不同优化器的数值敏感性不同。</p>
+<p><strong>回扣。</strong>方法有效的原因是软件和硬件使用同一套标准数据类型接口，内存收益贯穿整个训练过程。它依赖模型能够容忍 float16 精度，也依赖底层实现避免频繁升精度转换。论文尚未闭合 Zvfh 在真实向量硬件上的端到端性能。</p>
+<h3>关键机制再拆一层</h3>
+<p>论文最值得关注的是<strong>标准接口先行</strong>。Zfh 和 Zvfh定义了编译器可以依赖的稳定语义。硬件可以在内部采用不同流水和数据通路，训练框架不需要知道这些细节。</p>
+<p>层冻结则说明，后端优化不能只看 dtype。哪些参数需要梯度、哪些中间状态需要保留，也会改变 tile、存储和计算映射。</p>
+<h3>实验证据与边界</h3>
+<p>MNIST 与 FashionMNIST 上，float16 和 float32 的准确率差距整体较小。模型权重内存约减半，梯度和工作区也大致按相同比例下降。作者在 NaxRiscv 软核中加入 Zfh 后，LUT6 增加 1.15%，触发器增加 0.05%，频率保持 175 MHz。</p>
+<p>当前性能证据有限。完整训练主要通过 RISC-V 指令集模拟环境验证。Zvfh 的向量结构给出了实现方案，但缺少真实 VPU 或 FPGA 上的训练加速和能耗数据。因此，论文证明了软件完整性和低硬件面积，尚未证明向量路径能达到多大加速。</p>
+<h3>与相关工作的关系</h3>
+<p>与自定义训练加速器相比，这项工作优先建立标准 ISA 上的可移植路径。它与 Jack of All Scales、ExaGEMM 等硬件扩展研究形成对照：前者扩大标准能力的使用范围，后者为特定格式或模式增加专门单元。</p>
+<h3>对研究方向的具体启发</h3>
+<p><strong>主方向是 Tile for DSA。</strong>设计 tile 抽象时，dtype 不能只是字段名称。目标描述还应包含累加类型、向量宽度、转换代价、梯度是否保留和冻结层信息。这样编译器才能决定同一 tile 在训练与推理中的不同存储和流水策略。</p>
+<p>这篇论文也提醒硬件后端研究先建立可执行的标准基线，再证明专用扩展相对标准路径的真实收益。</p>
+<div class="review-box">
+<label>审阅笔记</label>
+<textarea data-note-key="riscv-fp16-odt" placeholder="可记录：训练 tile 的目标描述还需要哪些状态，例如梯度、优化器和冻结标记？"></textarea>
+<div class="saved">笔记仅保存在当前浏览器</div>
+</div>
+</article>
+</section><section class="day-section" id="day-0726">
+<h2>7 月 26 日｜Kernel Agent 的评测边界</h2>
+<div class="callout key"><strong>当日研究信号</strong><br/>当天重点从“模型能否写代码”转向“系统怎样可靠选择代码”。最重要的结论是，编译、正确性、计时和工作负载必须由独立框架管理；代码智能体只负责提出候选和解释证据。</div>
+<article class="paper-card" data-search="Harness Engineering for LLM-Driven GPU Kernel Generation 用独立评测框架约束大模型生成 GPU kernel，并以完整工作负载决定候选晋升 Agent DSL Tile Fuzz" data-track="Agent DSL Tile Fuzz" id="harness-engineering">
+<h2>Harness Engineering for LLM-Driven GPU Kernel Generation</h2>
+<div class="paper-meta"><span class="tag primary">Agent kernel DSL</span><span class="tag">Kernel 评测框架</span><span class="badge strong">B200 真机与完整候选轨迹</span></div>
+<p class="source-row"><strong>中文理解：</strong>用独立评测框架约束大模型生成 GPU kernel，并以完整工作负载决定候选晋升<br/>
+<strong>论文版本：</strong>arXiv:2607.17979v1，2026 年 7 月 20 日<br/>
+<strong>来源：</strong><a href="https://arxiv.org/abs/2607.17979" rel="noopener" target="_blank">arXiv 论文页</a></p>
+<h3>先给结论</h3>
+<p class="summary-line">输入是算子定义、官方基线、工作负载分布和 GPU 性能证据；评测框架固定编译、正确性、计时与晋升规则，优化控制器只在这些边界内生成候选；输出是可追溯的 kernel 版本、失败证据和经过全工作负载确认的保留实现。</p>
+<h3>读懂它需要的最少背景</h3>
+<p>GPU kernel 生成系统通常包含两部分。代码智能体负责写 Triton、TileLang 或 CUDA 代码，评测程序负责编译、运行和计时。如果智能体能够修改评测脚本、只选择有利 shape 或改变计时边界，就可能产生看似很快却没有可比性的结果。</p>
+<p>评测框架（Harness）不是普通测试脚本。它还规定候选生成预算、参考实现、错误容差、预热方式、重复次数、工作负载范围、性能晋升条件和证据保存方式。</p>
+<h3>3 分钟理解</h3>
+<p><strong>总览。</strong>论文把 GPU kernel 自动优化设计成“不可修改的评测框架加基于证据的控制器”。评测框架负责守住任务和数据，控制器阅读 profiler 与历史候选，只提出有限修改。候选只有通过代表性测试、完整工作负载和高次数复测后才会保留。</p>
+<p><strong>旧方法。</strong>常见 Agent 流程是生成代码、运行一个 benchmark、看到加速就继续修改。这个流程容易出现三类问题。第一，候选只在一个 shape 上更快。第二，计时脚本与官方基线不一致。第三，错误候选和失败尝试没有保存，模型会重复走相同路径。</p>
+<p><strong>问题位置。</strong>性能优化的难点不只在代码生成，还在“谁定义成功”。若成功条件由同一个 Agent 临时决定，优化结果无法审计。论文改变的假设是，Agent 不应同时扮演选手和裁判。</p>
+<div class="steps">
+<div class="step" data-step="1"><strong>固定任务技能。</strong>人工整理每个算子的数学语义、shape 范围、参考实现、已知硬件限制和 profiler 使用方法。</div>
+<div class="step" data-step="2"><strong>代表性门禁。</strong>候选先在少量能快速暴露错误和明显性能问题的 shape 上编译、差分和计时。</div>
+<div class="step" data-step="3"><strong>证据驱动修改。</strong>控制器根据 profiler、工作负载分布和上轮失败原因，限制 Agent 每轮只修改少量机制。</div>
+<div class="step" data-step="4"><strong>完整扫描。</strong>代表性门禁通过后，候选必须在官方对齐的全部 shape 和 dtype 上运行，不能只报告最优样例。</div>
+<div class="step" data-step="5"><strong>归档和晋升。</strong>保存源码、编译日志、正确性、各 shape 延迟和失败原因。只有整体分布改善且无回归时才替换当前最佳版本。</div>
+</div>
+<p><strong>完整例子。</strong>设一个注意力 kernel 在序列长度 128 上快 30%，但在长度 4096 上因寄存器压力慢 20%。代表性门禁可能先发现前者具有潜力，完整扫描会发现后者回归。评测框架不会把该候选直接晋升，而是把“长序列寄存器压力”加入下一轮证据。Agent可以减小 tile 或增加另一版本，而不是只围绕短序列继续优化。</p>
+<p><strong>回扣。</strong>方法有效的原因是，它把性能优化转成可审计的候选选择问题。它依赖高质量参考、合理的工作负载分布和稳定的计时环境。专家技能仍然占有重要地位，当前结果不能视为完全自主优化。</p>
+<h3>关键机制再拆一层</h3>
+<p>核心机制是<strong>候选晋升协议</strong>。协议把快速探索和最终确认分开。快速阶段允许低成本失败，晋升阶段要求全量证据。</p>
+<p>另一个机制是<strong>失败轨迹归档</strong>。被拒绝的候选不是垃圾，而是后续搜索的负面知识。它可以说明某种 tile、融合或数据布局在什么 shape 上失效。</p>
+<h3>实验证据与边界</h3>
+<p>论文在 NVIDIA Blackwell B200 上评估 5 个算子定义。相对提供的 FlashInfer 基线，保留候选的平均延迟加速分别为 1.62、18.05、29.68、1.12 和 13.70 倍。不同算子差距很大，说明部分基线留有较大优化空间，也有算子已经接近成熟水平。</p>
+<p>Agent-Assisted 方案整体优于完全由 Agent 自主搜索的版本，支持专家约束和高质量参考仍然重要。论文还明确说明这些结果不等同于官方排行榜成绩，且系统包含较多人工贡献。因此，它证明了 harness 方法的工程价值，不能证明 Agent 已经独立完成全部优化。</p>
+<h3>与相关工作的关系</h3>
+<p>与 PERFOPT-Bench 的共同点是，两者都防止通过绕过计算、硬编码答案或改变测量边界获得虚假加速。本文更聚焦 GPU kernel，并把 profiler 和工作负载证据纳入候选生成。</p>
+<p>与 AutoTVM、Ansor相比，本文的搜索器是代码智能体，但评测层仍遵循传统自动调优的基本原则：候选必须由独立测量选择。</p>
+<h3>对研究方向的具体启发</h3>
+<p><strong>主方向是 Agent 友好的 kernel DSL。</strong>新 DSL 应把评测合同作为语言生态的一部分，包括参考语义、允许误差、工作负载分布、目标硬件、候选预算和晋升规则。Agent只能修改 kernel 与被授权的调度参数。</p>
+<p><strong>次方向是 Tile Fuzz。</strong>被拒绝候选可以形成性能异常语料。除了数值错误，还能学习哪些合法 tile 在特定 shape 上出现严重退化。</p>
+<div class="review-box">
+<label>审阅笔记</label>
+<textarea data-note-key="harness-engineering" placeholder="可记录：你的 Kernel Agent 中哪些评测事实必须完全不可修改？代表性门禁应怎样覆盖动态 shape？"></textarea>
+<div class="saved">笔记仅保存在当前浏览器</div>
+</div>
+</article>
+</section><section class="day-section" id="day-0727">
+<h2>7 月 27 日｜恢复隐藏硬件事实与整理时序证据</h2>
+<div class="callout key"><strong>当日研究信号</strong><br/>当天两篇论文都在处理黑盒系统中的事实获取。DGNA从延迟分布恢复存储拓扑，WaveformQA把波形转换成可验证的时序问题。它们说明，性能模型和硬件 Agent 都需要结构化、可复现的观测层。</div>
+<article class="paper-card" data-search="DGNA: Dissecting GPU NUMA Architecture through Microbenchmarking and Data Analysis 通过可移植微基准和统计分析恢复 GPU 内部隐藏的非一致存储访问结构 Tile for DSA TileLang-TPU" data-track="Tile for DSA TileLang-TPU" id="dgna">
+<h2>DGNA: Dissecting GPU NUMA Architecture through Microbenchmarking and Data Analysis</h2>
+<div class="paper-meta"><span class="tag primary">Tile for DSA</span><span class="tag">GPU 存储拓扑</span><span class="badge strong">A100 与 H100 真机微基准</span></div>
+<p class="source-row"><strong>中文理解：</strong>通过可移植微基准和统计分析恢复 GPU 内部隐藏的非一致存储访问结构<br/>
+<strong>论文版本：</strong>arXiv:2607.19922v1，2026 年 7 月 22 日<br/>
+<strong>来源：</strong><a href="https://arxiv.org/abs/2607.19922" rel="noopener" target="_blank">arXiv 论文页</a></p>
+<h3>先给结论</h3>
+<p class="summary-line">输入是黑盒 GPU 和一组跨计算单元的访存时延测量；系统分离 L2 与 DRAM 延迟、过滤噪声并聚类每个 SM 的延迟特征；输出是 GPU 内部的 NUMA 节点、SM 与存储节点关系，以及本地和远程访问代价。</p>
+<h3>读懂它需要的最少背景</h3>
+<p>非一致存储访问（Non-Uniform Memory Access，NUMA）表示不同计算单元访问同一层存储时，延迟可能不同。CPU 系统通常公开 NUMA 节点，GPU 内部的 L2 分片和 DRAM 分区关系往往不公开。</p>
+<p>如果编译器假设所有存储访问代价相同，它可能把生产者和消费者放在距离较远的计算单元上，也会让模拟器低估远程访问。</p>
+<h3>3 分钟理解</h3>
+<p><strong>总览。</strong>DGNA不依赖厂商私有指令，而是通过跨流多处理器的微基准测量缓存和显存延迟。系统把每个 SM 对不同地址区域的延迟整理成向量，再用统计聚类恢复 NUMA 拓扑。最终得到哪些 SM 更接近哪些 L2 或 DRAM 节点，以及远程访问需要额外多少周期。</p>
+<p><strong>旧方法。</strong>常见 GPU 微基准在一个线程块中反复访问地址，通过缓存命中和未命中估计延迟。这种方法容易把 L2、DRAM、刷新和调度噪声混在一起，也很难判断不同 SM 访问同一地址是否走相同路径。</p>
+<p><strong>问题位置。</strong>隐藏拓扑的证据来自“同一数据由不同 SM 访问时的稳定差异”。若基准无法分别控制数据位于 L2 还是 DRAM，就不能确认差异属于哪一层。论文改变的假设是，不必得到内部物理文档，也可以从完整延迟分布反推结构。</p>
+<div class="steps">
+<div class="step" data-step="1"><strong>构造跨 SM 测量。</strong>一个 SM 先访问目标地址，使数据进入 L2；另一个 SM 随后读取，从而测量跨 SM 的 L2 路径。</div>
+<div class="step" data-step="2"><strong>构造 DRAM 路径。</strong>通过缓存冲刷或足够大的工作集，让请求绕过已有缓存状态，测量显存访问。</div>
+<div class="step" data-step="3"><strong>过滤异常样本。</strong>使用高斯混合模型区分主要延迟分布和刷新、抢占等离群事件。</div>
+<div class="step" data-step="4"><strong>形成延迟向量。</strong>对每个 SM，记录它访问多个地址分区时的 L2 和 DRAM 延迟。</div>
+<div class="step" data-step="5"><strong>聚类恢复拓扑。</strong>延迟模式相近的 SM 被归为同一 NUMA 组，并进一步推断 L2 与 DRAM 节点之间的关系。</div>
+</div>
+<p><strong>完整例子。</strong>假设 SM0 访问地址分区 A 的 L2 延迟约 218 周期，访问分区 B 约 379 周期。SM1 的模式相反。系统会推断 SM0 更接近 A，SM1 更接近 B。如果同样的远程差值也出现在 DRAM 路径中，说明远程 DRAM 请求可能先经过远程 L2 互连，而不是直接进入显存控制器。</p>
+<p><strong>回扣。</strong>方法有效的原因是，拓扑会在大量重复测量中形成稳定的相对延迟模式。它依赖较强的实验控制和统计分离。厂商改变缓存策略、地址哈希或调度器后，需要重新测量，推断结果也不等同于官方物理结构图。</p>
+<h3>关键机制再拆一层</h3>
+<p>最关键的设计是<strong>延迟向量</strong>。单个平均值很难识别拓扑，一个 SM 对多个分区的整组延迟模式更像它的“位置指纹”。</p>
+<p>高斯混合模型的作用也很实际。GPU 访存数据包含刷新和系统噪声，直接取均值会把少量高延迟事件误认为拓扑差异。</p>
+<h3>实验证据与边界</h3>
+<p>在 A100 上，本地与远程 DRAM 延迟约为 385 和 546 周期，本地与远程 L2 约为 218 和 379 周期。在 H100 上，对应值约为 554/728 和 295/470 周期。相近的本地远程差值支持远程 DRAM 路径与 L2 互连相关。</p>
+<p>证据来自真实 A100 和 H100。论文研究的是黑盒推断，结论应理解为与测量一致的拓扑模型。它没有覆盖 AMD GPU，也没有证明所有工作负载都能通过 NUMA 感知放置获得相同比例收益。</p>
+<h3>与相关工作的关系</h3>
+<p>与传统 GPU 性能模型相比，DGNA提供目标硬件事实，而 TileSight、GPU-Tile-Sim 等模型可以消费这些事实。它与 profiler 的区别是，目标不是解释某次 kernel，而是恢复长期稳定的存储结构。</p>
+<h3>对研究方向的具体启发</h3>
+<p><strong>主方向是 Tile for DSA。</strong>新 DSA 的目标描述不应只记录峰值带宽和统一延迟，还要记录计算单元到存储分区的距离矩阵、地址映射和跨节点通信代价。</p>
+<p><strong>次方向是 TileLang-TPU。</strong>多核 TPU 后端可以将 tile 放置和 buffer 分配写成拓扑感知问题，并用微基准自动生成目标配置，而不完全依赖厂商文档。</p>
+<div class="review-box">
+<label>审阅笔记</label>
+<textarea data-note-key="dgna" placeholder="可记录：BM1690 上怎样设计类似的本地与远程 LMEM、DDR 或 core 间测量？"></textarea>
+<div class="saved">笔记仅保存在当前浏览器</div>
+</div>
+</article>
+<article class="paper-card" data-search="WaveformQA: Benchmarking LLM Temporal Reasoning on Digital Waveforms 评测大模型能否从数字波形中理解事件顺序、多信号关系和触发时延 Agent DSL Tile for DSA" data-track="Agent DSL Tile for DSA" id="waveformqa">
+<h2>WaveformQA: Benchmarking LLM Temporal Reasoning on Digital Waveforms</h2>
+<div class="paper-meta"><span class="tag primary">Agent kernel DSL</span><span class="tag">硬件时序证据</span><span class="badge medium">360 个可复现问题</span></div>
+<p class="source-row"><strong>中文理解：</strong>评测大模型能否从数字波形中理解事件顺序、多信号关系和触发时延<br/>
+<strong>论文版本：</strong>arXiv:2607.20638v1，2026 年 7 月 22 日<br/>
+<strong>来源：</strong><a href="https://arxiv.org/abs/2607.20638" rel="noopener" target="_blank">arXiv 论文页</a></p>
+<h3>先给结论</h3>
+<p class="summary-line">输入是开源 RISC-V 设计产生的数字波形；系统把波形表示为标准 VCD 或事件时间 JSON，并提出带程序化真值的问题；输出是不同模型在事件顺序、跨信号相关和多步时序推理上的准确率与失败类型。</p>
+<h3>读懂它需要的最少背景</h3>
+<p>数字波形记录硬件信号随时间的变化。值变化转储（Value Change Dump，VCD）是常用格式，但它为工具设计，包含层级、编码和增量更新，大模型阅读时容易丢失时间关系。</p>
+<p>硬件调试经常需要回答“复位释放后哪个信号先变化”“请求有效后多少周期收到响应”“两个事件之间是否出现冲突”等问题。这些不是普通代码阅读，而是时间序列推理。</p>
+<h3>3 分钟理解</h3>
+<p><strong>总览。</strong>WaveformQA把真实硬件仿真波形变成一个可复现问答基准。每个问题都有程序自动计算的答案。研究者比较 VCD 和事件时间 JSON 两种表示，观察模型在简单查询、事件排序和多信号推理上的能力。</p>
+<p><strong>旧方法。</strong>现有硬件大模型基准主要要求生成 Verilog 或解释代码，波形通常只是附加上下文。模型可能会根据代码猜测行为，而没有真正读取执行轨迹。另一方面，直接把长 VCD 放进上下文会消耗大量 token，信号值还需要根据时间增量恢复。</p>
+<p><strong>问题位置。</strong>困难出现在表示和推理两层。VCD 虽然紧凑，却把事件语义藏在格式中；即使转成直白事件，模型仍要处理跨多个周期和多个信号的因果关系。论文改变的假设是，硬件 Agent 的波形能力需要独立评测，不能由代码生成成绩替代。</p>
+<div class="steps">
+<div class="step" data-step="1"><strong>选择可复现设计。</strong>从五个开源 RISC-V 核生成仿真波形。</div>
+<div class="step" data-step="2"><strong>程序化生成问题。</strong>问题分为八类和二十四个子类，包括值查询、持续时间、事件顺序和多信号关系。</div>
+<div class="step" data-step="3"><strong>计算真值。</strong>脚本直接扫描波形，得到确定答案，避免人工标注错误。</div>
+<div class="step" data-step="4"><strong>比较输入表示。</strong>同一波形分别提供 VCD 和按时间列出的 JSON 事件。</div>
+<div class="step" data-step="5"><strong>分析错误。</strong>按问题类别、波形长度和上下文溢出统计准确率。</div>
+</div>
+<p><strong>完整例子。</strong>问题要求判断复位信号下降后，取指请求和总线响应哪个先变化。模型必须先找到复位下降时刻，再在两个信号的后续事件中寻找第一次变化，并比较时间。VCD 中信号名可能被短编码，值只在变化时记录；JSON 则明确写出时间、信号和值。实验显示，后者虽然 token 更多，却显著减少格式解析错误。</p>
+<p><strong>回扣。</strong>方法有效的原因是它把硬件时序推理从主观演示变成有程序真值的基准。它依赖波形问题能够被脚本准确表达。复杂协议语义、模拟信号和大型 SoC 的更长轨迹仍未覆盖。</p>
+<h3>关键机制再拆一层</h3>
+<p>论文最重要的发现是，<strong>更紧凑的文本不一定更适合大模型</strong>。VCD 比 JSON 少 15% 至 30% token，但 JSON 的准确率提高 37% 至 53%。这说明语义显式程度比纯 token 数更重要。</p>
+<p>另一个机制是程序化真值。基准可以持续加入新波形和问题，而不必依赖人工逐题判断。</p>
+<h3>实验证据与边界</h3>
+<p>基准包含 360 个问题、8 个类别、24 个子类别和 5 个 RISC-V 核。Claude 4.6 总体准确率约 64.7%，Gemini约 57.8%。部分模型因上下文溢出表现很低。波形从 5000 个变化扩展到 30000 个变化时，准确率下降约 8 至 12 个百分点。</p>
+<p>最难的类别包括时间顺序、哪个信号先变化和触发后周期数。基准规模仍然有限，且集中在 RISC-V 数字波形。它能测量能力边界，不能直接证明模型在真实调试流程中能提高多少效率。</p>
+<h3>与相关工作的关系</h3>
+<p>与 Leaf、Microflow 等运行时事件表示相比，WaveformQA更偏向评测大模型。共同点是都把底层事件转成保留语义的结构化证据。</p>
+<p>它也补充了 VClare 等硬件生成工作。生成 RTL 后，Agent 还需要读取波形验证行为，不能只依赖编译和测试总分。</p>
+<h3>对研究方向的具体启发</h3>
+<p><strong>主方向是 Agent 友好的 kernel DSL。</strong>运行时反馈应转换成带 tile、buffer、阶段和时间的事件序列，再交给 Agent。直接输出底层地址和长日志会浪费推理能力。</p>
+<p><strong>次方向是 Tile for DSA。</strong>可以建立 TPU 波形或事件问答集，评测 Agent 是否能理解 DMA、TIU、同步和 buffer 复用的时序关系。</p>
+<div class="review-box">
+<label>审阅笔记</label>
+<textarea data-note-key="waveformqa" placeholder="可记录：TileLang 运行轨迹应怎样转换成适合 Agent 的事件格式？哪些时序问题最能暴露依赖错误？"></textarea>
+<div class="saved">笔记仅保存在当前浏览器</div>
+</div>
+</article>
+</section><section class="day-section" id="day-0728">
+<h2>7 月 28 日｜Tile 性能建模、在线调度与安全规格</h2>
+<div class="callout key"><strong>当日研究信号</strong><br/>当天三篇论文分别覆盖性能预测、运行时选择和形式规格。共同点是将模型推理放在结构化接口之后：tile 模型提供可计算结构，监控器提供运行时事实，安全要求提供证明目标。</div>
+<article class="paper-card" data-search="TileSight: A First-Principles Tile-Centric Analytical GPU Performance Model from Cores to Clusters 把 tile 从编程单位提升为统一的性能分析单位 TileLang-TPU Tile for DSA" data-track="TileLang-TPU Tile for DSA" id="tilesight">
+<h2>TileSight: A First-Principles Tile-Centric Analytical GPU Performance Model from Cores to Clusters</h2>
+<div class="paper-meta"><span class="tag primary">TileLang-TPU</span><span class="tag">Tile 性能模型</span><span class="badge strong">A100 到 B6000，最多 32 GPU</span></div>
+<p class="source-row"><strong>中文理解：</strong>把 tile 从编程单位提升为统一的性能分析单位<br/>
+<strong>论文版本：</strong>arXiv:2607.22432v1，2026 年 7 月 24 日<br/>
+<strong>来源：</strong><a href="https://arxiv.org/abs/2607.22432" rel="noopener" target="_blank">arXiv 论文页</a></p>
+<h3>先给结论</h3>
+<p class="summary-line">输入是 tile 化 kernel、目标 GPU 参数和跨设备放置；系统在 tile 内建模计算与搬运，在 tile 间建模依赖和缓存复用，在设备间建模通信；输出是单 GPU、融合 kernel 和多 GPU 服务的延迟、缓存命中与配置排序。</p>
+<h3>读懂它需要的最少背景</h3>
+<p>TileLang、Triton 和 CUDA Tile 都让程序员按 tile 描述计算。现有性能工具却常使用整个算子的运算量，或依赖训练数据的黑盒模型。它们难以解释融合 kernel 中多个 tile 怎样重叠，也难以迁移到新硬件。</p>
+<p>解析性能模型（Analytical Performance Model）根据硬件吞吐、带宽、延迟和程序结构计算性能。它可解释、成本低，但必须选择合适的建模粒度。</p>
+<h3>3 分钟理解</h3>
+<p><strong>总览。</strong>TileSight用同一个 tile 抽象连接三个层次。单个 tile 被表示为网络、内存和计算流水中的资源需求；多个 tile 通过数据依赖、程序顺序和缓存复用关系调度；跨 GPU 的远程 tile 访问再映射到通信拓扑。输出不仅是总延迟，还包含各层限制和候选 tile 的相对排序。</p>
+<p><strong>旧方法。</strong>屋顶线模型把 kernel 压成运算量和数据量，无法表示软件流水和合法重叠。机器学习成本模型能拟合复杂关系，但需要目标硬件数据，换到新架构容易失效。指令级模拟精细，却难以快速探索大量 tile 配置和多 GPU 放置。</p>
+<p><strong>问题位置。</strong>现代 kernel 的性能由 tile 之间的时间关系决定。两套 tile 具有相同 FLOPs 和字节数，若一套允许异步加载与计算重叠，另一套因依赖必须串行，延迟会不同。论文改变的假设是，tile 既是代码生成单位，也可以成为性能分析的稳定接口。</p>
+<div class="steps">
+<div class="step" data-step="1"><strong>建立 tile 内资源向量。</strong>记录一个 tile 在片上网络、全局内存、共享缓存、张量核心和普通核心上的工作量。</div>
+<div class="step" data-step="2"><strong>调度 tile 间动作。</strong>根据数据依赖、顺序依赖和资源限制，计算哪些动作可以合法重叠。</div>
+<div class="step" data-step="3"><strong>预测缓存复用。</strong>从 tile 的重用距离估计 L2 等多级缓存命中，而不要求完整地址级模拟。</div>
+<div class="step" data-step="4"><strong>映射跨设备访问。</strong>将远程 tensor tile 关联到设备放置和通信路径，用启动延迟与带宽模型估计代价。</div>
+<div class="step" data-step="5"><strong>比较候选。</strong>对不同 tile、融合边界和设备放置重复计算，选择预测最优配置。</div>
+</div>
+<p><strong>完整例子。</strong>考虑融合注意力 kernel。一个 Q tile 先从显存进入片上存储，随后与多个 K tile 执行矩阵乘，再由普通核心完成 Softmax，最后和 V tile 相乘。TileSight为这些阶段建立资源向量。K tile 的重复访问决定缓存命中，Softmax 与下一块 K 的加载是否能重叠由依赖图决定。若 K/V 位于远程 GPU，还要加入网络路径。模型最终给出这一 Q tile 的关键路径，并据此累积整 kernel 延迟。</p>
+<p><strong>回扣。</strong>方法有效，是因为 tile 粒度保留了决定性能的局部结构，同时比指令级模拟更简单。它依赖规则 tile 程序和可获得的硬件参数。数据相关控制流、不规则访问和隐藏 CTA 调度仍较难建模。</p>
+<h3>关键机制再拆一层</h3>
+<p>TileSight的关键不是单个公式，而是三个层次共享同一标识。一个 tile 在编译器 IR、缓存模型和跨设备通信中保持对应关系，便于解释误差和迁移。</p>
+<p>缓存部分使用重用距离而非逐地址模拟，使模型能够覆盖融合 kernel 和多级缓存，同时控制分析成本。</p>
+<h3>实验证据与边界</h3>
+<p>实验覆盖 A100、H200、B200 和 B6000。单 GPU kernel 的合并平均绝对百分比误差为 12.35%，L2 命中率预测在各 GPU 上大致与实测相差一个百分点。最多 32 GPU 的融合分布式 kernel 加权误差为 16.18%，端到端 vLLM 服务为 13.52%。</p>
+<p>模型能选择与厂商和专家基线竞争的 tile 配置。论文计划在正式发表后开源。局限包括规则 tile 假设、缺少数据依赖控制流，以及部分硬件调度和拓扑参数不可见。</p>
+<h3>与相关工作的关系</h3>
+<p>与 TileFlow相比，TileSight补充了跨线程和缓存层次的性能分析。与 GPU-Tile-Sim相比，它更偏解析和跨设备，而后者更强调事件式执行与同步。</p>
+<p>与 Ansor 的学习型成本模型相比，TileSight依赖较少测量数据，更适合新架构初期，但精度受硬件参数质量限制。</p>
+<h3>对研究方向的具体启发</h3>
+<p><strong>主方向是 TileLang-TPU。</strong>可以在 TileLang 流水化 IR 中直接导出 tile 资源向量、依赖边、LMEM 重用距离和多核通信。这样性能模型与后端共享同一表示。</p>
+<p><strong>次方向是 Tile for DSA。</strong>新 DSA 的目标描述应提供各引擎的吞吐、队列、存储层次和通信拓扑，使 tile 模型能够在硬件尚未成熟时进行设计探索。</p>
+<div class="review-box">
+<label>审阅笔记</label>
+<textarea data-note-key="tilesight" placeholder="可记录：现有 TileLang-TPU IR 中，哪些信息足够导出 tile 资源向量，哪些仍需后端补充？"></textarea>
+<div class="saved">笔记仅保存在当前浏览器</div>
+</div>
+</article>
+<article class="paper-card" data-search="Agentic CPU-GPU Scheduling for Heterogeneous AI Workloads 让大模型在运行时证据支持下选择立即用 GPU、排队等 GPU 或转到 CPU Agent DSL Tile for DSA" data-track="Agent DSL Tile for DSA" id="agentic-cpu-gpu-scheduling">
+<h2>Agentic CPU-GPU Scheduling for Heterogeneous AI Workloads</h2>
+<div class="paper-meta"><span class="tag primary">Agent kernel DSL</span><span class="tag">运行时异构调度</span><span class="badge medium">13 个场景达到穷举最优</span></div>
+<p class="source-row"><strong>中文理解：</strong>让大模型在运行时证据支持下选择立即用 GPU、排队等 GPU 或转到 CPU<br/>
+<strong>论文版本：</strong>arXiv:2607.22242v1，2026 年 7 月 24 日<br/>
+<strong>来源：</strong><a href="https://arxiv.org/abs/2607.22242" rel="noopener" target="_blank">arXiv 论文页</a></p>
+<h3>先给结论</h3>
+<p class="summary-line">输入是一组可在 CPU 或 GPU 执行的 AI 工具、当前 GPU 利用率和显存状态；运行时监控器主动补充测量，大模型组合成设备映射；输出是在给定资源状态下的工具放置方案。</p>
+<h3>读懂它需要的最少背景</h3>
+<p>Agent 工作流会调用向量检索、图像处理、语音模型、代码执行和其他工具。许多框架只要工具支持 GPU 就优先放到 GPU，但数据传输、排队和显存不足可能让 CPU 更快。</p>
+<p>异构调度的困难是运行时状态不断变化。离线测得的单工具延迟无法反映多个工具同时竞争 GPU 或显存交换的代价。</p>
+<h3>3 分钟理解</h3>
+<p><strong>总览。</strong>论文把每个工具的选择定义为立即在 GPU 运行、等待 GPU 队列或转到 CPU。大模型负责形成整体映射，算法监控器负责提供可信的运行时观测和有针对性的重测。输出方案通过实际执行确认，不需要离线训练调度模型。</p>
+<p><strong>旧方法。</strong>全 GPU 策略忽略排队和 PCIe 传输。传统静态调度器使用离线表，但同一工具在 GPU 空闲、GPU 高负载和显存不足时会有不同结果。在线 bandit 可以探索完整映射，但组合数量大，试错本身会增加用户延迟。</p>
+<p><strong>问题位置。</strong>关键缺口是监控数据不能直接回答“如果交换两个工具的设备会怎样”。论文改变的假设是，大模型可以负责组合推理，但观测和实验设计应由确定性监控器扩展。</p>
+<div class="steps">
+<div class="step" data-step="1"><strong>建立工具画像。</strong>对 19 个工具测量 CPU、GPU 和传输特征，形成初始偏好。</div>
+<div class="step" data-step="2"><strong>观察运行状态。</strong>监控 GPU 利用率、排队时间、显存占用和近期运行平均值。</div>
+<div class="step" data-step="3"><strong>提出重测。</strong>监控器可以建议对称重测或交换重测，例如把原在 GPU 的工具放到 CPU，观察端到端变化。</div>
+<div class="step" data-step="4"><strong>大模型形成映射。</strong>模型读取工具画像、运行状态和重测结果，在三种设备选项中组合方案。</div>
+<div class="step" data-step="5"><strong>执行和更新。</strong>实际结果回到监控器，更新平均值和下一轮提示。</div>
+</div>
+<p><strong>完整例子。</strong>假设工作流包含一个 GPU 推理工具、一个小型图像预处理和一个向量检索。单独测量时前两者都偏好 GPU。但 GPU 推理占满计算单元，图像预处理排队 20 毫秒，而 CPU 只需 8 毫秒。监控器提出交换重测，确认把图像预处理转到 CPU 后端到端时间更短。大模型据此保留推理在 GPU、预处理在 CPU，并判断检索可在任一设备运行。</p>
+<p><strong>回扣。</strong>方法有效，是因为它让大模型处理组合和上下文，让监控器处理事实和实验。它依赖场景规模较小、重测成本可接受，并且没有覆盖长期生产流量中的故障、抢占和多 GPU拓扑。</p>
+<h3>关键机制再拆一层</h3>
+<p>监控器不会直接给出映射，它只扩展模型能够看到的事实。这一边界可以减少模型被固定启发式替代，同时防止模型凭空猜测。</p>
+<p>三种选项中“等待 GPU”很重要。设备选择不只是 CPU 或 GPU，还包括当前执行时机。</p>
+<h3>实验证据与边界</h3>
+<p>作者分析 19 个工具，其中 11 个偏好 GPU，4 个结果不稳定，1 个因 PCIe 传输更偏好 CPU，3 个设备无明显差异。系统在 13 个串行、并行争用和显存约束场景中全部达到穷举最优映射，并超过 HEFT、StarPU 和全 GPU 策略。</p>
+<p>实验场景数量较少，工具和工作流由作者选取。结果证明监控与 LLM 配合在这些场景有效，不能证明它能扩展到大规模、多租户和持续变化的生产系统。</p>
+<h3>与相关工作的关系</h3>
+<p>与 DOPS、NELSSA 相比，本文的决策粒度是工具，硬件是 CPU 与 GPU。DOPS进一步处理算子和权重布局，NELSSA处理请求长度和运行时迁移。</p>
+<p>与传统调度算法相比，LLM 的价值来自整合不规则文字和测量证据，而非替代运行时监控。</p>
+<h3>对研究方向的具体启发</h3>
+<p><strong>主方向是 Agent 友好的 kernel DSL。</strong>Agent 调度器需要一个结构化观测接口，明确当前队列、资源、候选动作、重测成本和置信度。语言或运行时还应允许返回“证据不足，需要重测”。</p>
+<p><strong>次方向是 Tile for DSA。</strong>相同思想可用于 TIU、SIMD、CPU 和近存单元之间的算子放置。</p>
+<div class="review-box">
+<label>审阅笔记</label>
+<textarea data-note-key="agentic-cpu-gpu-scheduling" placeholder="可记录：哪些运行时事实适合由监控器自动提供，哪些决策才需要交给 Agent？"></textarea>
+<div class="saved">笔记仅保存在当前浏览器</div>
+</div>
+</article>
+<article class="paper-card" data-search="KaPilot: LLM-Assisted Generation of Kani Specifications for Unsafe Rust Verification 从文档中的安全要求出发生成 Kani 前置条件、后置条件和循环不变量 unsafe Rust Agent DSL" data-track="unsafe Rust Agent DSL" id="kapilot">
+<h2>KaPilot: LLM-Assisted Generation of Kani Specifications for Unsafe Rust Verification</h2>
+<div class="paper-meta"><span class="tag primary">LLM for unsafe Rust</span><span class="tag">形式规格生成</span><span class="badge medium">124 个函数，规格强度有人工基准</span></div>
+<p class="source-row"><strong>中文理解：</strong>从文档中的安全要求出发生成 Kani 前置条件、后置条件和循环不变量<br/>
+<strong>论文版本：</strong>arXiv:2607.21957v1，2026 年 7 月 24 日<br/>
+<strong>来源：</strong><a href="https://arxiv.org/abs/2607.21957" rel="noopener" target="_blank">arXiv 论文页</a></p>
+<h3>先给结论</h3>
+<p class="summary-line">输入是 unsafe Rust 函数、文档和轻量程序分析；多智能体先提取安全要求，再生成和验证 Kani 规格；输出是能够被模型检查器接受、并尽量与人工规格等价或更强的验证条件。</p>
+<h3>读懂它需要的最少背景</h3>
+<p>Kani 是面向 Rust 的有界模型检查工具。验证 unsafe 函数时，研究者需要写 proof harness，并明确指针有效、长度匹配、对象初始化和别名等前置条件。</p>
+<p>规格写得太弱，验证可能在不真实输入上失败；写得太强，工具可能通过，但只覆盖几乎不可能发生的情况。单纯“证明成功”不能说明规格质量。</p>
+<h3>3 分钟理解</h3>
+<p><strong>总览。</strong>KaPilot先从函数文档中提取安全要求，再让规格生成 Agent 把要求转换成 Kani 条件。预检查和验证 Agent循环检查语法、可满足性和证明结果，最后通过候选间的蕴含关系选择较强且可验证的规格。</p>
+<p><strong>旧方法。</strong>代码中心的 LLM 会根据实现猜测前置条件。若实现本身漏掉检查，模型可能把缺陷当成预期语义。另一些系统只要求 Kani 证明通过，模型可能加入“长度永远为零”一类过强条件，使验证失去意义。</p>
+<p><strong>问题位置。</strong>规格的来源和质量判断都不稳定。论文改变的假设是，安全意图应优先从文档提取，候选规格还要比较强弱，而非只看能否编译和证明。</p>
+<div class="steps">
+<div class="step" data-step="1"><strong>轻量分析和 harness。</strong>提取参数、控制流和可能的内存操作，建立基础验证入口。</div>
+<div class="step" data-step="2"><strong>提取安全要求。</strong>SafetyReq Agent阅读文档，整理指针、长度、初始化、别名和生命周期要求。</div>
+<div class="step" data-step="3"><strong>生成规格。</strong>SpecGenerate把自然语言要求转成 Kani假设、断言和循环不变量。</div>
+<div class="step" data-step="4"><strong>预检查和验证。</strong>检查规格能否满足、是否存在空洞证明，并将编译或证明错误反馈给生成 Agent。</div>
+<div class="step" data-step="5"><strong>选择最终候选。</strong>打乱候选顺序并比较逻辑蕴含，优先选择覆盖更广且不弱于其他候选的规格。</div>
+</div>
+<p><strong>完整例子。</strong>假设 unsafe 函数从裸指针读取 <code>len</code> 个元素。文档规定指针必须非空、指向至少 <code>len</code> 个已初始化元素，并且内存不能在调用期间被其他可变引用修改。KaPilot先把这些要求分解，再生成 Kani 假设。如果模型只写 <code>len == 0</code>，预检查可能发现候选过强，候选间蕴含比较也会显示它覆盖范围过小。</p>
+<p><strong>回扣。</strong>方法有效，是因为安全要求、规格生成和规格评估被分开。它依赖文档质量和 Kani 的有界验证能力。循环边界、复杂别名和缺少文档的函数仍可能失败。</p>
+<h3>关键机制再拆一层</h3>
+<p>关键机制是<strong>规格强度比较</strong>。两个规格都能证明函数安全时，系统需要判断哪一个允许更多合法输入。shuffle-and-implication 用不同顺序比较候选，减少模型偏向首个答案。</p>
+<p>预检查还负责识别不可满足规格和空洞证明，防止“限制所有输入”带来的虚假成功。</p>
+<h3>实验证据与边界</h3>
+<p>在 54 个有人工真值的 unsafe 函数上，规格生成成功率为 88.9%；在 70 个无真值函数上为 71.4%。有真值集合中，57.4% 的规格与人工规格等价或更强。相对 AutoSpec，可验证规格提高 14.8%，等价或更强提高 25.9%。</p>
+<p>代码已公开。实验规模仍有限，人工真值也可能存在不完整。证明受 Kani 展开边界和求解成本影响，结果不能外推到任意大型 unsafe 项目。</p>
+<h3>与相关工作的关系</h3>
+<p>HarnessLLM解决“怎样构造真实调用场景”，KaPilot解决“在场景上应假设和证明什么”。两者可以组合。</p>
+<p>SpecFirst 和 VClare也强调先明确规格。KaPilot更聚焦内存安全，并使用形式工具判断候选。</p>
+<h3>对研究方向的具体启发</h3>
+<p><strong>主方向是 LLM for unsafe Rust。</strong>可将文档安全要求、调用场景和 Kani 规格组织成三层数据集，分别评估要求恢复、harness 生成和证明质量。</p>
+<p><strong>次方向是 Agent 友好的 kernel DSL。</strong>同样的方法可用于 schedule 合法性规格。编译器生成候选前先明确容量、依赖和数值前提，再比较候选条件是否过强。</p>
+<div class="review-box">
+<label>审阅笔记</label>
+<textarea data-note-key="kapilot" placeholder="可记录：unsafe Rust benchmark 应怎样同时评价证明通过率和规格覆盖范围？"></textarea>
+<div class="saved">笔记仅保存在当前浏览器</div>
+</div>
+</article>
+</section><section class="day-section" id="day-0729">
+<h2>7 月 29 日｜编译归因、分布感知分派与真实调用场景</h2>
+<div class="callout key"><strong>当日研究信号</strong><br/>当天三篇论文都在缩小 Agent 或运行时的猜测空间。性能修改需要编译证据，MoE kernel 选择需要真实路由分布，unsafe Rust harness 需要项目已有测试。共同原则是先恢复决定行为的事实，再生成或选择实现。</div>
+<article class="paper-card" data-search="Compiler-Grounded Hierarchical Diagnosis for LLM-Based Triton Kernel Optimization 从运行时症状逐层追到中间表示和后端行为，再生成有证据支持的源码修改 Agent DSL TileLang-TPU" data-track="Agent DSL TileLang-TPU" id="compiler-grounded-diagnosis">
+<h2>Compiler-Grounded Hierarchical Diagnosis for LLM-Based Triton Kernel Optimization</h2>
+<div class="paper-meta"><span class="tag primary">Agent kernel DSL</span><span class="tag">编译器证据归因</span><span class="badge strong">Ascend 950，37 个算子</span></div>
+<p class="source-row"><strong>中文理解：</strong>从运行时症状逐层追到中间表示和后端行为，再生成有证据支持的源码修改<br/>
+<strong>论文版本：</strong>arXiv:2607.23089v1，2026 年 7 月 25 日<br/>
+<strong>来源：</strong><a href="https://arxiv.org/abs/2607.23089" rel="noopener" target="_blank">arXiv 论文页</a></p>
+<h3>先给结论</h3>
+<p class="summary-line">输入是结果正确但速度较慢的 Triton kernel；系统先检查代码模式和 profiler，必要时继续追踪中间表示与编译器实现；输出是性能原因、被排除的错误假设和经过正确性验证的源码修改。</p>
+<h3>读懂它需要的最少背景</h3>
+<p>性能分析器能告诉开发者标量单元、向量单元、内存和同步分别占多少时间，但它通常不能直接说明是哪行 DSL 代码产生了这些行为。中间表示（Intermediate Representation，IR）提供源代码和目标指令之间的转换证据。</p>
+<p>新 NPU 后端的指令、布局和降级规则复杂，代码表面上的简单操作可能触发标量化、同步或额外转换。</p>
+<h3>3 分钟理解</h3>
+<p><strong>总览。</strong>论文把 kernel 优化定义为逐层诊断。系统先用低成本规则寻找常见问题，再读取 profiler。只有当前证据仍不能解释瓶颈时，才进入 IR 和编译器源码。找到原因后，Agent才修改源代码。</p>
+<p><strong>旧方法。</strong>普通 kernel Agent看到延迟后直接尝试改 tile、循环和融合。某次加速只说明修改有效，不能说明原因。若真正瓶颈来自后端没有原生指令，模型可能连续修改源码却始终没有改善。</p>
+<p><strong>问题位置。</strong>运行时症状与编译决定之间缺少对应关系。论文改变的假设是，优化前应先确定“为什么慢”，而且分析深度应按需升级。</p>
+<div class="steps">
+<div class="step" data-step="1"><strong>代码模式分诊。</strong>检查串行归约、重复转换、明显错误的 tile 和冗余搬运。</div>
+<div class="step" data-step="2"><strong>性能诊断。</strong>读取各执行单元、指令类型和同步的占比，形成可能原因。</div>
+<div class="step" data-step="3"><strong>IR 归因。</strong>把异常标量操作、同步和 layout 转换对应到源代码中的具体算子。</div>
+<div class="step" data-step="4"><strong>编译器依据。</strong>必要时检查后端实现，确认目标是否有原生能力，以及当前降级为何发生。</div>
+<div class="step" data-step="5"><strong>证据支持的改写。</strong>只生成能够消除已确认瓶颈、并保持语义的修改。</div>
+</div>
+<p><strong>完整例子。</strong>论文中的分组评分 kernel 需要找每组最大的两个值并求和。直观实现先执行 <code>argmax</code>，屏蔽最大值位置，再找第二个最大值。Profiler显示约 26% 操作进入标量路径，IR 中出现 26 次同步。后端分析表明普通 <code>max</code> 有高效向量路径，带索引的 <code>argmax</code> 需要跟踪和传播标量索引。作者改为在固定大小组内计算非对角两两和，再做纯向量最大值。虽然比较次数增加，但取消了索引和同步，50 个测试全部通过并获得 1.42 倍加速。</p>
+<p><strong>回扣。</strong>方法有效，是因为每次修改都能对应到运行时和编译证据。它依赖后端开放 profiler、IR 和源码。封闭编译器只能完成前两层分析。</p>
+<h3>关键机制再拆一层</h3>
+<p>系统的层次并不要求每个问题都追到后端源码。简单问题在代码模式层即可修复。深层分析经常用于排除错误方向，例如确认某个同步是语义所需，不能通过源码小改删除。</p>
+<p>这提示诊断输出应包含证据强度和未确定项，而不是只给一条优化建议。</p>
+<h3>实验证据与边界</h3>
+<p>系统在 Ascend 950 基准中评估 37 个成功转换的算子。初始到优化 kernel 的几何平均加速为 4.35 倍，中位数 2.73 倍；22 个超过 2 倍，13 个超过 5 倍。</p>
+<p>最佳版本出现轮次的中位数约为第 10 轮。多数最终修改可归因于代码模式层，深层分析的直接获胜案例较少，说明其主要价值可能是解释和排除。论文没有完整消融每层对最终性能的独立贡献，且结果集中在 Ascend Triton 后端。</p>
+<h3>与相关工作的关系</h3>
+<p>与 Harness Engineering相比，前者规定候选怎样评测，本文规定性能问题怎样解释。两者组合后，失败候选可以变成结构化诊断，而不只是一个慢的数字。</p>
+<p>与 Microflow相比，本文跨越 DSL、IR 和编译器规则；Microflow更聚焦微体系结构事件因果。</p>
+<h3>对研究方向的具体启发</h3>
+<p><strong>主方向是 Agent 友好的 kernel DSL。</strong>新 DSL 编译器应输出源操作到 IR、目标指令和资源行为的映射，并提供“原因、证据、可修改项、不可修改约束”。</p>
+<p><strong>次方向是 TileLang-TPU。</strong>可为 GDMA、TIU、SIMD 和 LMEM 生成分层诊断，区分源码调度问题、后端降级问题和硬件能力缺口。</p>
+<div class="review-box">
+<label>审阅笔记</label>
+<textarea data-note-key="compiler-grounded-diagnosis" placeholder="可记录：你希望 Kernel Agent 首先看到哪一级诊断？哪些后端信息目前无法自动提取？"></textarea>
+<div class="saved">笔记仅保存在当前浏览器</div>
+</div>
+</article>
+<article class="paper-card" data-search="Decoding the Skew: Distribution-Aware MoE Inference with Adaptive Kernel Dispatch 根据专家负载分布而非 token 总数选择融合 MoE kernel Tile for DSA TileLang-TPU" data-track="Tile for DSA TileLang-TPU" id="decoding-skew">
+<h2>Decoding the Skew: Distribution-Aware MoE Inference with Adaptive Kernel Dispatch</h2>
+<div class="paper-meta"><span class="tag primary">Tile for DSA</span><span class="tag">MoE 运行时分派</span><span class="badge strong">B200 与真实 MoE 路由轨迹</span></div>
+<p class="source-row"><strong>中文理解：</strong>根据专家负载分布而非 token 总数选择融合 MoE kernel<br/>
+<strong>论文版本：</strong>arXiv:2607.23099v1，2026 年 7 月 25 日<br/>
+<strong>来源：</strong><a href="https://arxiv.org/abs/2607.23099" rel="noopener" target="_blank">arXiv 论文页</a></p>
+<h3>先给结论</h3>
+<p class="summary-line">输入是当前批次的专家路由直方图和 token 数；系统用离线构造的可控偏斜分布评测多种 kernel，再在 GPU 上匹配实时分布；输出是接近最优的融合 MoE 实现选择。</p>
+<h3>读懂它需要的最少背景</h3>
+<p>混合专家模型（Mixture of Experts，MoE）会把每个 token 路由到少数专家。每个专家实际收到的 token 数可能不同。融合 MoE kernel 通常需要为每个专家分配 tile，并对不足的部分填充。</p>
+<p>很多服务系统只按批次总 token 数选择 kernel。但相同总数下，均匀分布和集中到少数专家的分布会产生完全不同的 padding、并行度和数据复用。</p>
+<h3>3 分钟理解</h3>
+<p><strong>总览。</strong>论文先建立一个能够控制路由偏斜的评测方法，证明最佳 kernel 会随 token 数和专家分布一起变化。随后，DA-MoE在 GPU 内读取实时路由直方图，与离线调优过的分布原型匹配，并选择对应 kernel，避免 CPU 同步。</p>
+<p><strong>旧方法。</strong>静态 token 桶会认为两个拥有 1024 个 token 的批次相同。若第一个批次均匀分给 64 个专家，每个专家约 16 个 token；第二个批次大部分集中在 8 个专家。前者需要许多小 GEMM，后者形成少量大 GEMM。相同 tile 策略很难同时适合。</p>
+<p><strong>问题位置。</strong>性能决定因素被一个总量指标掩盖。论文改变的假设是，MoE workload shape 应包含完整或压缩后的分布特征。</p>
+<div class="steps">
+<div class="step" data-step="1"><strong>定义分布指标。</strong>使用有效专家数压缩路由偏斜，数值越低表示负载越集中。</div>
+<div class="step" data-step="2"><strong>反向生成分布。</strong>使用 Dirichlet 模型产生具有指定偏斜程度的专家直方图，形成可控 benchmark。</div>
+<div class="step" data-step="3"><strong>离线调优。</strong>在不同 token 数和偏斜分布上测量多种融合 MoE kernel，保存近优区域。</div>
+<div class="step" data-step="4"><strong>在线提取。</strong>路由完成后直接在 GPU 上得到实时直方图和压缩特征。</div>
+<div class="step" data-step="5"><strong>GPU 内分派。</strong>匹配最近的离线分布并选择 kernel，避免把信息复制到 CPU 后再返回。</div>
+</div>
+<p><strong>完整例子。</strong>两个批次都有 2048 个 token。均匀批次的专家 token 数接近，适合让更多线程块并行处理各专家；偏斜批次只有少数专家很大，适合更大的 M tile 和不同的并行分配。DA-MoE根据直方图选择不同 kernel，而不是把它们放在同一个 2048-token 桶中。</p>
+<p><strong>回扣。</strong>方法有效，是因为运行时特征与真正的 kernel shape 对齐。它依赖离线库覆盖常见分布，在线匹配开销足够低。遇到训练分布外的路由、动态专家并行或新硬件时需要重新调优。</p>
+<h3>关键机制再拆一层</h3>
+<p>有效专家数是一个低成本特征，但它可能把形状不同的直方图压成相同数值。因此系统仍需要更丰富的匹配或回退策略。</p>
+<p>GPU 驻留分派避免 CPU-GPU 往返，这一点对于短 kernel 很重要，否则调度开销可能抵消收益。</p>
+<h3>实验证据与边界</h3>
+<p>在 HumanEval-X 服务轨迹上，DA-MoE相对静态策略，使 DeepSeek-V3 的融合 MoE 几何平均延迟提高 1.16 倍，Kimi K2 提高 1.29 倍，峰值分别为 1.40 和 1.56 倍。完整 MoE 层的收益略低。</p>
+<p>实验在 NVIDIA B200 和真实 MoE 模型上进行。结果依赖离线 kernel 库和分布覆盖。论文没有证明同一指标能适用于所有专家并行、量化和多节点配置。</p>
+<h3>与相关工作的关系</h3>
+<p>与 AutoTVM 的 shape-based dispatch 类似，DA-MoE也从离线测量中选择版本，但它把数据分布加入 shape。</p>
+<p>DOPS进一步把算子设备放置和权重布局纳入决策，NELSSA则处理请求长度和状态迁移。三者共同扩展了运行时特征。</p>
+<h3>对研究方向的具体启发</h3>
+<p><strong>主方向是 Tile for DSA。</strong>新 DSA 的 kernel 选择接口应允许分布特征、稀疏率和负载不均衡进入目标描述。</p>
+<p><strong>次方向是 TileLang-TPU。</strong>TileLang可生成多套 MoE tile 模板，运行时根据专家直方图选择，并将未覆盖分布记录回自动调优系统。</p>
+<div class="review-box">
+<label>审阅笔记</label>
+<textarea data-note-key="decoding-skew" placeholder="可记录：MoE kernel dispatch 除有效专家数外，还应保存哪些分布特征？"></textarea>
+<div class="saved">笔记仅保存在当前浏览器</div>
+</div>
+</article>
+<article class="paper-card" data-search="HarnessLLM: Rust Verification Harness Generation with Large Language Models 从项目已有单元测试恢复真实调用场景，再生成 Kani 验证入口 unsafe Rust Agent DSL" data-track="unsafe Rust Agent DSL" id="harnessllm">
+<h2>HarnessLLM: Rust Verification Harness Generation with Large Language Models</h2>
+<div class="paper-meta"><span class="tag primary">LLM for unsafe Rust</span><span class="tag">验证入口生成</span><span class="badge strong">9 个项目、494 个测试、6 个真实缺陷</span></div>
+<p class="source-row"><strong>中文理解：</strong>从项目已有单元测试恢复真实调用场景，再生成 Kani 验证入口<br/>
+<strong>论文版本：</strong>arXiv:2607.22161v1，2026 年 7 月 24 日<br/>
+<strong>来源：</strong><a href="https://arxiv.org/abs/2607.22161" rel="noopener" target="_blank">arXiv 论文页</a></p>
+<h3>先给结论</h3>
+<p class="summary-line">输入是真实 Rust 项目的单元测试和目标函数；系统抽取调用场景、把具体参数替换成依赖感知的非确定值，并逐步生成和修复 Kani harness；输出是能够通过编译和模型检查的真实场景验证入口。</p>
+<h3>读懂它需要的最少背景</h3>
+<p>形式验证入口（Verification Harness）负责构造对象、生成输入、调用目标函数并写出要证明的性质。unsafe Rust 函数通常依赖复杂对象状态，函数签名无法说明正确调用顺序。</p>
+<p>直接让大模型根据源码生成 harness，容易虚构类型和辅助函数，也会用完全独立的随机值破坏参数之间的关系。</p>
+<h3>3 分钟理解</h3>
+<p><strong>总览。</strong>HarnessLLM不从空白开始猜调用方式，而是从项目已有测试恢复真实场景。系统保留对象构造和关键调用结构，把具体输入替换成满足依赖关系的非确定值，再通过编译和 Kani 反馈逐步修复。</p>
+<p><strong>旧方法。</strong>自动 harness 工具常按函数签名为每个参数生成任意值。若一个长度参数必须等于缓冲区长度，两个参数独立生成会导致大量无意义失败。大模型虽能阅读上下文，却可能自行添加不存在的构造函数，使 harness 无法编译。</p>
+<p><strong>问题位置。</strong>真实调用场景和可探索输入之间缺少桥梁。论文改变的假设是，现有单元测试可以作为语义种子，模型应在其结构上做最小泛化。</p>
+<div class="steps">
+<div class="step" data-step="1"><strong>抽取场景。</strong>从测试中识别对象创建、方法调用、状态准备和断言，合并相似调用模式。</div>
+<div class="step" data-step="2"><strong>分析参数依赖。</strong>判断长度、索引、指针和对象字段之间的关系，决定哪些值可以独立非确定生成。</div>
+<div class="step" data-step="3"><strong>增量生成。</strong>先生成最小可编译 harness，再逐步加入非确定输入和安全性质。</div>
+<div class="step" data-step="4"><strong>保护关键区域。</strong>真实测试中的对象构造和 API 调用被标记为不可随意改写，防止模型修复时改变任务。</div>
+<div class="step" data-step="5"><strong>检测虚构并反馈。</strong>编译器发现不存在的类型、函数或字段后，系统明确指出虚构项，要求模型使用项目真实 API。</div>
+</div>
+<p><strong>完整例子。</strong>一个测试先创建字节缓冲区，再传入指针和长度调用 unsafe 解析函数。HarnessLLM保留缓冲区构造和调用，把字节内容改为 Kani 任意值，但长度仍由缓冲区实际长度计算。这样模型检查器能探索不同内容，同时不会因指针与长度无关而只发现无效越界。</p>
+<p><strong>回扣。</strong>方法有效，是因为单元测试提供真实使用方式，依赖分析提供可探索范围。它依赖项目拥有质量较好的测试，并受 Kani 的边界和求解成本限制。</p>
+<h3>关键机制再拆一层</h3>
+<p>关键机制是<strong>场景与参数分离</strong>。对象生命周期和调用顺序保持不变，数据内容和受约束参数变成符号值。</p>
+<p>关键区域保护减少了“为了编译而改变语义”的修复。虚构检测则把普通编译错误转换成针对模型的明确反馈。</p>
+<h3>实验证据与边界</h3>
+<p>实验覆盖 9 个真实 Rust 项目和 494 个测试。系统抽取 294 个调用场景，精确率为 94.66%，并为全部场景生成 harness，平均每个约 145 秒。Autoharness只在 41% 场景上成功。</p>
+<p>生成 harness 最终发现 6 个真实内存安全缺陷，是较强的实用证据。局限是方法依赖现有测试，测试未覆盖的调用方式仍难恢复；Kani 的循环展开和大对象状态也会限制可验证范围。</p>
+<h3>与相关工作的关系</h3>
+<p>KaPilot生成安全规格，HarnessLLM生成调用场景和输入。两者组合后可以形成“真实场景加高质量规格”的完整验证流程。</p>
+<p>与普通 test-to-test 变异不同，HarnessLLM的目标是形式验证，因此需要保留符号输入和证明性质。</p>
+<h3>对研究方向的具体启发</h3>
+<p><strong>主方向是 LLM for unsafe Rust。</strong>benchmark 应同时保存原始测试、抽取场景、参数依赖、生成 harness 和发现的缺陷，分别评价场景恢复和验证能力。</p>
+<p><strong>次方向是 Agent 友好的 kernel DSL。</strong>可以从现有 kernel 测试恢复 shape、layout、初始化和调用协议，再生成符号化或变形测试，而不是让模型从 API 签名猜测。</p>
+<div class="review-box">
+<label>审阅笔记</label>
+<textarea data-note-key="harnessllm" placeholder="可记录：你的 unsafe Rust 项目现有测试能恢复哪些调用场景？哪些关系需要专门的依赖分析？"></textarea>
+<div class="saved">笔记仅保存在当前浏览器</div>
+</div>
+</article>
+</section>
+<section class="day-section" id="day-0730">
+<h2>7 月 30 日｜前端缺陷、规格修复与异构调度</h2>
+<div class="callout key">
+<strong>当日共同主题</strong><br/>
+    编译系统要先明确“当前处于哪一类问题”。测试端需要知道缺陷来自符号执行、守卫、图断裂还是副作用；运行端需要知道延迟来自阶段、设备争用还是权重布局。分类清楚之后，生成与搜索才有稳定目标。
+  </div>
+<article class="paper-card" data-search="Demystifying Deep Learning Compiler Frontend Bugs 系统分析 TorchDynamo 前端缺陷，并用根因分类指导定向测试 Tile Fuzz" data-track="Tile Fuzz" id="frontend-bugs">
+<h2>Demystifying Deep Learning Compiler Frontend Bugs</h2>
+<div class="paper-meta"><span class="tag primary">Tile Fuzz</span><span class="tag">编译器前端测试</span><span class="badge strong">123 个历史缺陷，23 个新缺陷</span></div>
+<p class="source-row"><strong>中文理解：</strong>系统分析 TorchDynamo 前端缺陷，并用根因分类指导定向测试<br/><strong>论文版本：</strong>arXiv:2607.25651v1，2026 年 7 月 28 日<br/><strong>来源：</strong><a href="https://arxiv.org/abs/2607.25651" rel="noopener" target="_blank">arXiv 论文页</a></p>
+<h3>先给结论</h3><p class="summary-line">输入是 TorchDynamo 的历史缺陷、修复记录和源码；系统建立前端职责与根因分类，再让大模型围绕各类根因生成测试；输出是 7 类根因、15 个子类，以及 23 个新发现缺陷，其中 15 个得到确认。</p>
+<h3>读懂它需要的最少背景</h3>
+<p>深度学习编译器前端负责把 Python 程序捕获成计算图。TorchDynamo需要解释字节码、记录对象状态、生成运行前提，并在无法捕获的语句处处理图断裂。</p>
+<p>前端错误与普通算子错误不同。张量计算可能完全正确，但列表、迭代器、闭包、异常或对象字段的状态没有被正确保留，最终使编译模式与普通执行模式产生不同结果。</p>
+<h3>3 分钟理解</h3>
+<p><strong>总览。</strong>论文先从真实缺陷中恢复 TorchDynamo 前端承担的职责，再把缺陷按根因组织。分类结果被转成定向测试模板，大模型只负责组合能触发某类语义问题的 Python 程序。测试分别在普通执行和 <code>torch.compile</code> 下运行，并比较返回值、异常和对象状态。</p>
+<p><strong>旧方法。</strong>很多深度学习编译器测试生成张量算子和 shape，然后比较 eager 与 compiled 输出。这能发现后端误编译，却很少触发 Python 对象和控制流问题。黑盒报告只说明两条路径不一致，无法判断问题在前端、图优化还是后端。</p>
+<p><strong>问题位置。</strong>真正被忽略的是前端对动态 Python 语义的建模。一个图断裂前对列表追加元素，图断裂后读取列表长度；若前端只捕获张量而没有保存副作用，最终张量可能正确，列表状态却错误。常见随机张量程序很难有目的地产生这种组合。</p>
+<div class="steps">
+<div class="step" data-step="1"><strong>恢复缺陷事实。</strong>从 issue、补丁和回归测试中抽取触发程序、错误现象、修复位置和涉及的前端职责。</div>
+<div class="step" data-step="2"><strong>形成根因体系。</strong>将缺陷归入符号执行、守卫、图断裂、副作用等类别，再细分对象建模、迭代器状态、作用域和类型转换等子类。</div>
+<div class="step" data-step="3"><strong>转成生成模板。</strong>每个子类规定必须同时出现的程序要素。例如迭代器缺陷需要创建、部分消费、跨图边界和再次读取。</div>
+<div class="step" data-step="4"><strong>生成定向程序。</strong>大模型在模板内选择具体容器、控制流和张量操作，避免完全自由生成。</div>
+<div class="step" data-step="5"><strong>多状态差分。</strong>比较返回值、异常、对象字段、容器内容和副作用，不只比较张量。</div>
+</div>
+<p><strong>完整例子。</strong>测试创建一个列表，向其中追加张量，在一个前端无法捕获的 Python 操作处发生图断裂，然后读取列表长度并继续张量计算。普通执行得到长度 1。若编译路径没有把追加操作带过图边界，长度仍为 0。根因模板能够稳定构造这个状态组合，并把错误定位到副作用与图断裂交界。</p>
+<p><strong>回扣。</strong>方法有效，是因为生成空间围绕真实根因组织，而不是盲目扩大程序数量。它依赖历史缺陷具有代表性，也依赖人工审阅分类。TorchDynamo 的根因不能直接等同于 TileLang 或 MLIR 前端缺陷。</p>
+<h3>关键机制再拆一层</h3>
+<p>根因分类同时承担三个角色。它决定生成器需要组合什么语义，决定覆盖率应该统计什么，也决定错误缩减时哪些结构不能删除。</p>
+<p>大模型用于辅助阅读缺陷和实例化测试，分类和 oracle 仍由人工与执行结果约束。这减少了模型把相似表象错误合并成错误根因的风险。</p>
+<h3>实验证据与边界</h3>
+<p>作者分析 123 个已确认前端缺陷，得到 7 个根因类别和 15 个子类。基于分类的测试又发现 23 个未知缺陷，其中 15 个得到确认，覆盖 8 个类别或子类。</p>
+<p>新缺陷发现是最强证据。论文集中在 TorchDynamo，对其他前端的迁移需要重新建立职责和历史缺陷语料。分类过程包含人工复核，因此尚不能视为完全自动测试系统。</p>
+<h3>与相关工作的关系</h3>
+<p>与 Tzer 等编译器模糊测试相比，这项工作将主要精力放在前端动态语义，而非中间表示和优化 pass。与 SolSmith 相似，它也强调生成器必须理解语言语义，但这里的语义来自真实缺陷分类。</p>
+<h3>对研究方向的具体启发</h3>
+<p><strong>主方向是 Tile Fuzz。</strong>可以对 TileLang 历史缺陷建立对应分类，包括 shape 与边界、layout 地址映射、buffer 生命周期、异步依赖、目标 intrinsic、动态 shape 分派和前后端接口。</p>
+<p>每类缺陷应同时产生生成模板、覆盖指标、oracle 和最小化保护条件，使真实缺陷知识进入整个测试流程。</p>
+<div class="review-box"><label>审阅笔记</label><textarea data-note-key="frontend-bugs" placeholder="可记录：TileLang 历史 issue 中最常见的三类前端或调度缺陷是什么？"></textarea><div class="saved">笔记仅保存在当前浏览器</div></div>
+</article>
+<article class="paper-card" data-search="Beyond Prefill-Decode Disaggregation: Dynamic Operator Scheduling 同时决定算子放在哪个设备，以及持久权重以什么分块布局保存 Tile for DSA TileLang-TPU" data-track="Tile for DSA TileLang-TPU" id="dops">
+<h2>Beyond Prefill-Decode Disaggregation: Dynamic Operator Scheduling</h2>
+<div class="paper-meta"><span class="tag primary">Tile for DSA</span><span class="tag">异构运行时</span><span class="badge strong">放置与权重布局联合优化</span></div>
+<p class="source-row"><strong>中文理解：</strong>同时决定算子放在哪个设备，以及持久权重以什么分块布局保存<br/><strong>论文版本：</strong>arXiv:2607.25498v1，2026 年 7 月 28 日<br/><strong>来源：</strong><a href="https://arxiv.org/abs/2607.25498" rel="noopener" target="_blank">arXiv 论文页</a></p>
+<h3>先给结论</h3><p class="summary-line">输入是大模型推理图、工作负载 shape、NPU 和存内计算设备的能力、运行时争用与内存限制；DOPS构建阶段感知图，联合优化算子放置和权重布局；输出是满足容量约束的异构执行计划。</p>
+<h3>读懂它需要的最少背景</h3>
+<p>预填充和解码具有不同计算特征，因此常被分配到不同设备。另一种常见方法使用屋顶线模型，把计算密集算子放到 NPU，把带宽密集算子放到存内计算设备。</p>
+<p>这些方法通常假设每个算子的设备代价固定。真实系统中，shape、设备争用和权重在内存中的持久布局都会改变代价。</p>
+<h3>3 分钟理解</h3>
+<p><strong>总览。</strong>DOPS把大模型推理拆成带阶段信息的算子图。一个调度器根据当前 shape 和设备状态选择算子位置，另一个布局仲裁器在容量限制下选择权重块布局。两项决定反复更新，直到形成一致计划。</p>
+<p><strong>旧方法。</strong>预填充—解码分离会把整个阶段固定到某类设备。屋顶线放置则独立判断每个算子更偏计算还是带宽。它们没有考虑同一设备上多个算子的竞争，也没有考虑权重已经按哪种 tile 和顺序常驻。</p>
+<p><strong>问题位置。</strong>假设一个矩阵乘理论上适合 PIM，但它所需权重当前以 NPU 友好格式存放。重新布局会增加时间和内存。若 PIM 还在执行上一算子，静态放置的收益会进一步消失。论文改变的假设是，算子位置和持久数据布局必须共同决定。</p>
+<div class="steps">
+<div class="step" data-step="1"><strong>构建阶段图。</strong>把预填充、解码和其他阶段中的算子表示为有向无环图，并记录依赖和 shape。</div>
+<div class="step" data-step="2"><strong>估计动态代价。</strong>根据设备能力、当前争用和数据移动估计每个算子在 NPU 或 PIM 上的延迟。</div>
+<div class="step" data-step="3"><strong>执行双焦点放置。</strong>Bifocal 调度器同时观察局部算子收益和全图关键路径，选择设备。</div>
+<div class="step" data-step="4"><strong>选择权重布局。</strong>权重布局仲裁器在容量限制下决定各权重块怎样分块和驻留。</div>
+<div class="step" data-step="5"><strong>闭环修正。</strong>布局改变算子代价，系统重新评估放置，直到得到一致计划。</div>
+</div>
+<p><strong>完整例子。</strong>同一 Transformer 层在长预填充中执行大矩阵乘，NPU 计算吞吐更有优势；在小批解码中，权重读取占比提高，PIM 可能更合适。如果 PIM 容量不足以保存全部层权重，WLA只为收益最大的块选择 PIM 布局，其余保持 NPU 布局。Bifocal随后重新计算关键路径，避免为了局部加速引入大量布局转换。</p>
+<p><strong>回扣。</strong>方法有效，是因为调度决策使用了真实影响延迟的阶段、争用和持久布局。它依赖可用的设备性能模型和离线测量，硬件与运行时变化后需要重新校准。</p>
+<h3>关键机制再拆一层</h3>
+<p>DOPS中的“闭环”并非在线反复试错，而是让放置与布局模型相互提供新的代价。任何一方单独优化都可能产生在另一方约束下不可行的方案。</p>
+<p>阶段感知图还避免把预填充和解码中的同名算子视为同一工作负载。它们的 shape、批量和关键路径位置不同。</p>
+<h3>实验证据与边界</h3>
+<p>Bifocal相对固定预填充—解码分离基线获得 1.20 至 2.23 倍几何平均加速。权重布局仲裁器在 Bifocal 或线性放置基础上再提供 1.28 至 1.33 倍几何平均提升。</p>
+<p>代码以 TriForm 形式公开。实验基于代表性 NPU 与 PIM 系统模型，结果依赖设备参数和工作负载。它证明联合优化的价值，不能直接外推到所有 DSA 或真实生产集群。</p>
+<h3>与相关工作的关系</h3>
+<p>DA-MoE根据专家负载分布选择 kernel，DOPS把决策扩大到算子设备与权重布局。NELSSA进一步允许请求在执行中迁移。三者的决策粒度逐步扩大。</p>
+<p>与 XLA、IREE 的设备放置相比，DOPS更强调持久权重布局和运行时争用。</p>
+<h3>对研究方向的具体启发</h3>
+<p><strong>主方向是 Tile for DSA。</strong>目标描述应同时表达算子执行代价、权重 tile 布局、设备容量、布局转换和运行时争用。</p>
+<p><strong>次方向是 TileLang-TPU。</strong>可以让同一 TileLang 算子拥有多种设备和布局版本，由图级运行时根据阶段与资源选择，而不是只做单 kernel 调优。</p>
+<div class="review-box"><label>审阅笔记</label><textarea data-note-key="dops" placeholder="可记录：你的 DSA 后端中哪些布局需要持久保存，哪些可以在运行时低成本转换？"></textarea><div class="saved">笔记仅保存在当前浏览器</div></div>
+</article>
+<article class="paper-card" data-search="VClare: Resolving Imperfect Specifications in LLM-Based Verilog Generation 在生成 Verilog 之前发现并修复自然语言规格中的含糊、矛盾和缺失 Agent DSL Tile for DSA" data-track="Agent DSL Tile for DSA" id="vclare">
+<h2>VClare: Resolving Imperfect Specifications in LLM-Based Verilog Generation</h2>
+<div class="paper-meta"><span class="tag primary">Agent kernel DSL</span><span class="tag">规格工程</span><span class="badge medium">单模块与 53 个多模块任务</span></div>
+<p class="source-row"><strong>中文理解：</strong>在生成 Verilog 之前发现并修复自然语言规格中的含糊、矛盾和缺失<br/><strong>论文版本：</strong>arXiv:2607.24854v1，2026 年 7 月 25 日<br/><strong>来源：</strong><a href="https://arxiv.org/abs/2607.24854" rel="noopener" target="_blank">arXiv 论文页</a></p>
+<h3>先给结论</h3><p class="summary-line">输入是可能不完整或互相冲突的自然语言硬件规格；系统在文本层挖掘不一致，并在仿真层比较多个候选行为；输出是修复后的规格和更高的 Verilog 测试通过率。</p>
+<h3>读懂它需要的最少背景</h3>
+<p>自然语言硬件规格常出现模糊词、边界条件缺失和多段描述互相矛盾。大模型即使严格遵循其中一段，也可能生成与另一段不一致的 RTL。</p>
+<p>普通 Verilog 生成系统通常把规格视为可信输入。生成失败后再修改代码，很难判断问题来自实现还是任务本身。</p>
+<h3>3 分钟理解</h3>
+<p><strong>总览。</strong>VClare在代码生成前增加规格修复。文本路径直接寻找描述中的冲突和缺口；仿真路径生成多个可能实现，通过测试行为聚类发现规格允许了互不一致的解释。系统再仲裁冲突并形成较稳定规格。</p>
+<p><strong>旧方法。</strong>若规格写“计数器在 enable 为高时递增”，另一段又说“每个时钟周期递增”，模型可能选择任一解释。单次生成和仿真只能显示某个实现失败，无法确认哪条描述应被修改。</p>
+<p><strong>问题位置。</strong>错误发生在需求进入生成器之前。常见的多轮代码修复会围绕不稳定目标反复修改。论文改变的假设是，规格本身也应成为可分析和可执行验证的对象。</p>
+<div class="steps">
+<div class="step" data-step="1"><strong>文本一致性检查。</strong>大模型提取状态、触发条件、优先级和边界行为，寻找同一概念的相互冲突描述。</div>
+<div class="step" data-step="2"><strong>生成候选解释。</strong>对仍然含糊的规格产生多个符合不同解释的 Verilog 实现。</div>
+<div class="step" data-step="3"><strong>仿真行为聚类。</strong>在系统生成的输入上运行候选，根据输出轨迹把实现分组。</div>
+<div class="step" data-step="4"><strong>冲突仲裁。</strong>若多个行为簇都与部分文本一致，系统在测试时选择证据更充分的解释或要求补充条件。</div>
+<div class="step" data-step="5"><strong>重写规格和生成。</strong>将确认的行为写回规格，再生成最终 RTL。</div>
+</div>
+<p><strong>完整例子。</strong>一个多模块 FIFO 规格没有说明满状态下写请求和读请求同时到达时的优先级。候选实现可能先写、先读或同时更新。VClare通过仿真观察这些行为分成不同簇，再结合其他描述和测试确定优先级，并把规则写回规格。后续生成不再围绕三种解释反复试错。</p>
+<p><strong>回扣。</strong>方法有效，是因为它把规格含糊转成可观察的行为分歧。它依赖测试能够区分候选解释，也可能遇到多个行为都合理而缺少外部事实的情况。</p>
+<h3>关键机制再拆一层</h3>
+<p>文本修复适合明显矛盾，仿真修复适合表面文字一致但行为仍有多种解释的情况。两条路径互补。</p>
+<p>行为聚类不直接判断哪一簇正确，它只暴露规格没有唯一决定行为。最终仲裁仍需要文档、参考测试或用户确认。</p>
+<h3>实验证据与边界</h3>
+<p>论文构建两套带系统注入规格缺陷的数据集。一套来自 VerilogEval-human 的单模块任务，另一套来自 ComplexVDB 的 53 个多模块任务。修复规格后，单模块生成通过率提高 12.7%，多模块提高 13.7%。</p>
+<p>结果说明规格修复能提高生成质量。缺陷由研究者系统注入，与真实工程规格的分布可能不同。通过率提升也不能证明修复后的规格完全符合原设计者意图。</p>
+<h3>与相关工作的关系</h3>
+<p>SpecFirst先探测行为再写规格，VClare重点检查规格是否自洽。两者可以串联。KaPilot则使用形式工具检查安全规格的可满足性和强度。</p>
+<h3>对研究方向的具体启发</h3>
+<p><strong>主方向是 Agent 友好的 kernel DSL。</strong>自然语言算子需求应先转换为结构化 contract，再检查 shape、dtype、边界、错误行为和性能目标是否冲突。</p>
+<p><strong>次方向是 Tile for DSA。</strong>硬件目标描述也可能含糊，例如同一 intrinsic 的支持 shape 与对齐要求分散在不同文档中，可以用候选映射和仿真行为发现冲突。</p>
+<div class="review-box"><label>审阅笔记</label><textarea data-note-key="vclare" placeholder="可记录：Kernel 规格中最容易产生冲突的字段是什么？哪些行为可以通过参考实现自动探测？"></textarea><div class="saved">笔记仅保存在当前浏览器</div></div>
+</article>
+</section>
+<section class="day-section" id="day-0731">
+<h2>7 月 31 日｜规格先行、请求迁移、数值归因与推理预算</h2>
+<div class="callout key">
+<strong>当日共同主题</strong><br/>
+    Agent 系统的关键资源不只是模型参数。稳定规格、硬件位置、数值证据和推理预算都需要被显式管理。生成、验证、运行和诊断分别使用不同类型的事实。
+  </div>
+<article class="paper-card" data-search="SpecFirst: Behavioral Specification Elicitation as a First-Class Step in Program Synthesis 要求 Agent 先探测参考程序并形成固定行为规格，再开始从零实现代码 Agent DSL" data-track="Agent DSL" id="specfirst">
+<h2>SpecFirst: Behavioral Specification Elicitation as a First-Class Step in Program Synthesis</h2>
+<div class="paper-meta"><span class="tag primary">Agent kernel DSL</span><span class="tag">程序合成</span><span class="badge strong">ProgramBench 全 200 任务</span></div>
+<p class="source-row"><strong>中文理解：</strong>要求 Agent 先探测参考程序并形成固定行为规格，再开始从零实现代码<br/><strong>论文版本：</strong>arXiv:2607.27167v1，2026 年 7 月 29 日<br/><strong>来源：</strong><a href="https://arxiv.org/abs/2607.27167" rel="noopener" target="_blank">arXiv 论文页</a></p>
+<h3>先给结论</h3><p class="summary-line">输入是自然语言文档和一个只能执行的参考程序；规格 Agent 主动探测行为并写出结构化规格，代码 Agent 再实现；输出是更高的测试通过率和更充分的参考程序探索覆盖。</p>
+<h3>读懂它需要的最少背景</h3>
+<p>从零编程缺少现有类型、调用关系和测试。ProgramBench只给文档和 execute-only 二进制，Agent必须通过输入输出探测理解真实行为。</p>
+<p>单循环 Agent一边探测、一边编码和修复。随着上下文增长，早期观察容易丢失，代码还会反过来影响对需求的解释。</p>
+<h3>3 分钟理解</h3>
+<p><strong>总览。</strong>SpecFirst强制把规格恢复设为独立阶段。规格 Agent阅读文档，列出不确定点，通过运行参考二进制消除歧义，并输出稳定规格。代码 Agent只消费该规格完成实现。</p>
+<p><strong>旧方法。</strong>假设文档说“归一化路径”，却没有说明空路径、重复分隔符和父目录符号。单循环 Agent可能按第一直觉写代码，测试失败后再零散探测。不同观察被混在代码修改历史中，行为理解不断漂移。</p>
+<p><strong>问题位置。</strong>编码开始得太早。论文改变的假设是，行为规格不是代码生成过程中的临时笔记，而是必须先完成并持续引用的工件。</p>
+<div class="steps">
+<div class="step" data-step="1"><strong>阅读文档。</strong>提取输入格式、输出、边界和错误语义，并列出尚未明确的问题。</div>
+<div class="step" data-step="2"><strong>设计区分性输入。</strong>选择能够区分多种可能解释的探测，而不是随机调用。</div>
+<div class="step" data-step="3"><strong>执行参考程序。</strong>记录返回值、异常、格式和状态变化。</div>
+<div class="step" data-step="4"><strong>形成固定规格。</strong>将正常、边界和错误行为整理为代码 Agent可持续引用的结构化文档。</div>
+<div class="step" data-step="5"><strong>独立实现。</strong>代码 Agent围绕规格设计、编码和测试，不再反复猜测任务。</div>
+</div>
+<p><strong>完整例子。</strong>规格 Agent分别输入空字符串、连续斜杠、<code>..</code> 和尾部斜杠，观察二进制怎样处理。它把这些行为写成四条明确规则。代码 Agent实现时可以直接设计状态机和测试，不会在每次失败后重新解释“归一化”。</p>
+<p><strong>回扣。</strong>方法有效，是因为规格成为稳定上下文，并把探测预算集中在未知行为上。它依赖参考程序可执行且探测覆盖足够。若二进制具有随机性或外部状态，规格恢复会更难。</p>
+<h3>关键机制再拆一层</h3>
+<p>规格 Agent的目标不是写完整自然语言说明，而是形成能够指导实现和测试的行为合同。探索覆盖率用于衡量它触发了多少参考行为。</p>
+<p>独立阶段还便于审计。如果最终实现错误，可以先判断规格是否错误，再判断代码是否偏离规格。</p>
+<h3>实验证据与边界</h3>
+<p>论文在 ProgramBench 全部 200 个任务、四个模型和两个模型家族上评估。相对单循环基线，测试通过率提高 6.9% 至 21.3%，参考二进制探索覆盖提高 9.4% 至 18.5%，结果具有统计显著性。</p>
+<p>任务属于一般程序合成，尚未直接验证高性能 kernel、硬件约束或非确定并发。规格质量仍由最终测试间接评价。</p>
+<h3>与相关工作的关系</h3>
+<p>VClare检查规格内部冲突，SpecFirst负责从文档和参考程序恢复规格。Harness Engineering再用不可修改评测判断候选。三项工作可以形成完整顺序。</p>
+<h3>对研究方向的具体启发</h3>
+<p><strong>主方向是 Agent 友好的 kernel DSL。</strong>在生成 kernel 前，应先固定 shape、dtype、广播、归约、边界 tile、数值容差、融合边界、允许调度和性能目标。</p>
+<p>代码、测试和优化都引用同一规格版本，任何规格变化都应重新运行完整验证。</p>
+<div class="review-box"><label>审阅笔记</label><textarea data-note-key="specfirst" placeholder="可记录：你的 Kernel Agent 前置规格需要哪些必填字段？哪些字段可以通过 PyTorch 参考函数自动探测？"></textarea><div class="saved">笔记仅保存在当前浏览器</div></div>
+</article>
+<article class="paper-card" data-search="NELSSA: GPU-PNM Serving via Length-Based Request Placement 按当前上下文长度选择 GPU 或近存设备，并在请求增长后迁移 KV 状态 Tile for DSA" data-track="Tile for DSA" id="nelssa">
+<h2>NELSSA: GPU-PNM Serving via Length-Based Request Placement</h2>
+<div class="paper-meta"><span class="tag primary">Tile for DSA</span><span class="tag">异构 LLM 服务</span><span class="badge strong">真实 GPU-PNM 端到端原型</span></div>
+<p class="source-row"><strong>中文理解：</strong>按当前上下文长度选择 GPU 或近存设备，并在请求增长后迁移 KV 状态<br/><strong>论文版本：</strong>arXiv:2607.26633v1，2026 年 7 月 29 日，MICRO 2026<br/><strong>来源：</strong><a href="https://arxiv.org/abs/2607.26633" rel="noopener" target="_blank">arXiv 论文页</a></p>
+<h3>先给结论</h3><p class="summary-line">输入是混合长度 LLM 请求、当前 KV 缓存和 GPU/PNM 资源；系统把短请求放 GPU、长请求放 PNM，并在上下文增长后迁移状态；输出是更高解码吞吐和更低长尾延迟。</p>
+<h3>读懂它需要的最少背景</h3>
+<p>GPU适合把短请求组成大批次，利用高计算吞吐。长上下文解码需要反复读取大型键值缓存，显存容量和带宽会限制批量。</p>
+<p>近存处理（Processing-near-Memory，PNM）设备算力较弱，但靠近大容量内存，适合长上下文注意力。请求长度还会在生成过程中持续增长。</p>
+<h3>3 分钟理解</h3>
+<p><strong>总览。</strong>NELSSA把请求位置视为动态状态。短上下文请求先在 GPU 高吞吐执行，长请求进入 PNM。运行时监控上下文增长，达到阈值后将请求和 KV 状态迁移到 PNM，不重新计算已完成 token。</p>
+<p><strong>旧方法。</strong>GPU-only 系统在混合长度批次中被长请求占用大量显存，短请求无法形成大批量。静态异构放置在请求到达时选择设备，但开始很短的请求可能在多轮生成后变长。</p>
+<p><strong>问题位置。</strong>一次性选择无法适应请求状态演化。论文改变的假设是，设备放置必须包含迁移，并把缓存状态作为一等对象。</p>
+<div class="steps">
+<div class="step" data-step="1"><strong>按长度初始放置。</strong>短请求进入 GPU，长请求进入 PNM。</div>
+<div class="step" data-step="2"><strong>设备专用 kernel。</strong>GPU执行高吞吐解码，PNM执行靠近内存的稀疏注意力。</div>
+<div class="step" data-step="3"><strong>监控增长。</strong>运行时持续记录每个请求的上下文和 KV 容量。</div>
+<div class="step" data-step="4"><strong>迁移状态。</strong>请求跨过阈值时，系统通过 CXL、RPC 和 RDMA 转移 KV 与执行元数据。</div>
+<div class="step" data-step="5"><strong>继续执行。</strong>PNM从现有状态继续解码，不重放历史 token。</div>
+</div>
+<p><strong>完整例子。</strong>一个 512-token 请求最初在 GPU。生成数千 token 后，KV 缓存增大，使同批其他短请求无法进入。运行时将该请求的 KV 块和位置状态迁到 PNM，GPU释放显存继续服务短请求，长请求在 PNM靠近大容量内存执行注意力。</p>
+<p><strong>回扣。</strong>方法有效，是因为设备优势随请求长度变化，迁移让系统重新匹配。它依赖低成本互连和完整状态迁移，阈值不当或迁移过频会抵消收益。</p>
+<h3>关键机制再拆一层</h3>
+<p>核心机制是无重计算迁移。系统必须明确哪些状态决定后续解码，包括 KV 缓存、当前位置和采样相关元数据。</p>
+<p>长度阈值并非固定硬件常数，它受模型、批量、显存和 PNM 带宽影响，需要运行时或离线校准。</p>
+<h3>实验证据与边界</h3>
+<p>作者实现了端到端 GPU-PNM 原型，包括 PNM 侧稀疏注意力、GPU decode kernel 和 CXL 基础设施上的主机运行时。混合长度工作负载中，解码吞吐最高提高 5.5 倍，P99 延迟最高降低 15 倍。</p>
+<p>最高收益依赖请求长度分布和硬件配置。真实原型增强了可信度，但系统仍围绕特定 PNM 设备和 CXL 环境，不能直接外推到普通 PCIe TPU。</p>
+<h3>与相关工作的关系</h3>
+<p>DA-MoE根据分布选择 kernel，DOPS根据阶段和布局选择设备，NELSSA根据长度与状态增长迁移请求。它把运行时决策扩展到有状态对象。</p>
+<h3>对研究方向的具体启发</h3>
+<p><strong>主方向是 Tile for DSA。</strong>跨设备运行时需要一个状态迁移合同，明确 tile、KV 块、地址、版本、依赖和恢复点。</p>
+<p>对于多 DSA 系统，编译器应生成设备专用实现和保守回退，并让运行时根据状态变化选择。</p>
+<div class="review-box"><label>审阅笔记</label><textarea data-note-key="nelssa" placeholder="可记录：跨 TPU 或 PNM 迁移时，哪些 tile 状态必须保存，怎样验证没有遗漏和重复？"></textarea><div class="saved">笔记仅保存在当前浏览器</div></div>
+</article>
+<article class="paper-card" data-search="BMOA: Baseline–Mechanism–Outcome Attribution for Numerical Deviations 把浮点差异拆成比较基线、编译机制证据和真实数值后果 Tile Fuzz" data-track="Tile Fuzz" id="bmoa">
+<h2>BMOA: Baseline–Mechanism–Outcome Attribution for Numerical Deviations</h2>
+<div class="paper-meta"><span class="tag primary">Tile Fuzz</span><span class="tag">数值正确性</span><span class="badge strong">1276 条归因记录</span></div>
+<p class="source-row"><strong>中文理解：</strong>把浮点差异拆成比较基线、编译机制证据和真实数值后果<br/><strong>论文版本：</strong>arXiv:2607.27270v1，2026 年 7 月 29 日<br/><strong>来源：</strong><a href="https://arxiv.org/abs/2607.27270" rel="noopener" target="_blank">arXiv 论文页</a></p>
+<h3>先给结论</h3><p class="summary-line">输入是编译前后结果、多个参考基线和编译配置；系统分别记录差异相对什么产生、证据支持哪种编译机制，以及误差是否真的变差；输出是允许混合、含糊和未知结论的可审计归因记录。</p>
+<h3>读懂它需要的最少背景</h3>
+<p>浮点运算不满足严格结合律。归约重排、融合乘加和向量化会改变最后几位。观察到差异并不自动等于误编译，也不自动等于数值质量下降。</p>
+<p>许多编译器测试只使用单个误差阈值。阈值失败时，比较基线、编译行为和准确率后果被混在一起。</p>
+<h3>3 分钟理解</h3>
+<p><strong>总览。</strong>BMOA要求每条数值异常回答三个独立问题。第一，与什么系统边界和基线比较。第二，现有证据真正支持哪种编译机制。第三，相对更高精度或问题参考，结果变好、变差还是无法确定。</p>
+<p><strong>旧方法。</strong>假设优化后结果与未优化结果差 1e-5。普通测试会根据阈值给出通过或失败。但未优化程序也可能因严重消去误差偏离高精度答案，优化后的融合乘加反而更准确。</p>
+<p><strong>问题位置。</strong>单一基线无法说明差异来源和后果。论文改变的假设是，数值正确性报告应保留证据边界，而非强制给出唯一归因。</p>
+<div class="steps">
+<div class="step" data-step="1"><strong>定义基线。</strong>明确严格浮点、未优化程序、局部关闭变换、另一编译器或更高精度参考。</div>
+<div class="step" data-step="2"><strong>检查可复现性。</strong>重复运行和固定环境，排除随机与系统噪声。</div>
+<div class="step" data-step="3"><strong>定位机制。</strong>通过局部变换对照、编译器配置和跨编译器比较判断可能的重排、融合或向量化。</div>
+<div class="step" data-step="4"><strong>评价后果。</strong>用高精度或领域参考判断误差增大、减小或无法比较。</div>
+<div class="step" data-step="5"><strong>保存审计记录。</strong>保留输入、编译配置、指标和所有支撑工件。</div>
+</div>
+<p><strong>完整例子。</strong>一个交替大正数和大负数的归约容易消去。标量顺序、树形归约和 FMA 路径得到不同末位。BMOA先确认差异相对哪条基线，再通过关闭向量化或融合定位机制，最后与高精度求和比较。若优化结果更接近高精度，记录应写“编译器引入差异但准确率改善”，而非误编译。</p>
+<p><strong>回扣。</strong>方法有效，是因为它拒绝把不同问题压成一个阈值。它依赖可构造的局部对照和高精度参考。复杂模型中，高精度真值可能不可得，此时应保留未知。</p>
+<h3>关键机制再拆一层</h3>
+<p>“未知”是框架的重要输出。证据不足时不应根据相关性推断某个 pass 是原因。</p>
+<p>每条记录同时保存操作层差异和领域结果，使后续形式化规格可以基于真实异常模式构建。</p>
+<h3>实验证据与边界</h3>
+<p>论文在六个科学计算 kernel、确定性压力输入和 ARM64 Clang 配置上构建 1276 条记录，并形成 162 实例的受控机制矩阵。实验显示基线选择会改变诊断，编译器差异不必然导致准确率下降，消去和大动态范围影响最大。</p>
+<p>框架不是证明系统，实验集中在科学 kernel 和 ARM64。深度学习低精度、GPU 并行非确定性和完整模型准确率仍需单独研究。</p>
+<h3>与相关工作的关系</h3>
+<p>与传统差分测试相比，BMOA扩展了结果解释。与 Kaizen、SolSmith等生成方法相比，它不负责产生输入，而是负责保存证据和结论边界。</p>
+<h3>对研究方向的具体启发</h3>
+<p><strong>主方向是 Tile Fuzz。</strong>数值 oracle应输出基线、schedule 变化、目标 dtype、高精度误差方向和证据强度。</p>
+<p>性能异常也可借鉴同样结构，区分基线异常、编译机制和端到端后果。</p>
+<div class="review-box"><label>审阅笔记</label><textarea data-note-key="bmoa" placeholder="可记录：Tile Fuzz 当前数值 oracle 中，哪些结论其实只有差异证据而没有机制证据？"></textarea><div class="saved">笔记仅保存在当前浏览器</div></div>
+</article>
+<article class="paper-card" data-search="ARES: Adaptive Reasoning-Effort Steering for PPA- and Cost-Aware RTL Optimization 低成本推理停滞后才升级到更深推理，使 RTL 优化质量与模型调用成本共同可控 Agent DSL" data-track="Agent DSL" id="ares">
+<h2>ARES: Adaptive Reasoning-Effort Steering for PPA- and Cost-Aware RTL Optimization</h2>
+<div class="paper-meta"><span class="tag primary">Agent kernel DSL</span><span class="tag">硬件设计 Agent</span><span class="badge strong">成本归一化与自适应推理</span></div>
+<p class="source-row"><strong>中文理解：</strong>低成本推理停滞后才升级到更深推理，使 RTL 优化质量与模型调用成本共同可控<br/><strong>论文版本：</strong>arXiv:2607.27879v1，2026 年 7 月 30 日<br/><strong>来源：</strong><a href="https://arxiv.org/abs/2607.27879" rel="noopener" target="_blank">arXiv 论文页</a></p>
+<h3>先给结论</h3><p class="summary-line">输入是 RTL、综合得到的功耗性能面积指标和历史修改；系统从低推理强度开始，连续停滞后提高推理深度；输出是在相同归一化美元成本下更优的硬件设计。</p>
+<h3>读懂它需要的最少背景</h3>
+<p>RTL 优化 Agent会循环修改代码、综合并读取功耗、性能和面积（Power, Performance and Area，PPA）。每次调用模型都会消耗 token 和美元成本。</p>
+<p>已有系统常固定每轮推理强度，并强调复杂长期记忆，但不同设计阶段对深层推理的需求不同。</p>
+<h3>3 分钟理解</h3>
+<p><strong>总览。</strong>ARES先建立可比较的单次模型调用成本，再实验不同记忆组织和推理强度。系统发现复杂记忆没有稳定收益，于是用耐心计数器监控优化进展。低成本推理连续若干轮没有改善时，才升级到更深推理。</p>
+<p><strong>旧方法。</strong>固定高推理强度会让简单局部修改也支付昂贵成本。固定低强度则可能在复杂结构优化上停滞。只报告最终 PPA 不报告模型成本，也无法公平比较 Agent。</p>
+<p><strong>问题位置。</strong>推理资源没有根据任务难度和搜索阶段分配。论文改变的假设是，模型思考深度本身也应成为运行时调度变量。</p>
+<div class="steps">
+<div class="step" data-step="1"><strong>归一化成本。</strong>把不同模型和推理强度的调用换算成统一美元成本，与目标函数一起记录。</div>
+<div class="step" data-step="2"><strong>从低强度开始。</strong>先处理容易识别的逻辑和综合问题。</div>
+<div class="step" data-step="3"><strong>监控停滞。</strong>若连续若干轮 PPA 没有改善，耐心计数达到阈值。</div>
+<div class="step" data-step="4"><strong>升级推理。</strong>调用更深推理分析结构、关键路径和跨模块修改。</div>
+<div class="step" data-step="5"><strong>根据新进展调整。</strong>获得改善后继续在合适强度搜索，避免每轮固定最高成本。</div>
+</div>
+<p><strong>完整例子。</strong>一个乘加单元初始存在明显冗余寄存器，低强度模型可以快速删除。后续性能受跨模块关键路径限制，数轮局部修改没有进展。耐心计数触发更深推理，模型重新组织流水级。综合结果改善后，系统不必在所有后续小修中持续使用最高强度。</p>
+<p><strong>回扣。</strong>方法有效，是因为推理预算跟随实际停滞，而非预先固定。它依赖综合指标相对稳定，耐心阈值也可能对新设计失配。</p>
+<h3>关键机制再拆一层</h3>
+<p>论文还比较长期记忆形式。将相同经验简单拼接与工程化记忆相比没有稳定差异，说明信息质量和使用时机可能比复杂组织更重要。</p>
+<p>成本归一化让不同模型与推理强度可以在同一质量—成本平面上比较。</p>
+<h3>实验证据与边界</h3>
+<p>耐心策略在 21 个训练设计上拟合，并在 3 个未见设计上测试。在相同归一化成本下，目标函数改善 23% 至 27%，最佳固定强度为 16% 至 23%。相对 Dr. RTL，ARES使用 12% token 达到更深 25% 的 FoM。</p>
+<p>测试设计数量较少，策略参数可能过拟合。实验评价 RTL PPA，不能直接证明相同调度对 kernel 代码或编译器研究 Agent 有效。</p>
+<h3>与相关工作的关系</h3>
+<p>Compiler-Grounded Diagnosis按证据不足逐层升级分析，ARES按优化停滞升级模型推理。两者可以统一成成本感知的诊断控制器。</p>
+<p>Harness Engineering保存失败候选，ARES可以利用这些记录判断是否继续低成本探索或增加分析深度。</p>
+<h3>对研究方向的具体启发</h3>
+<p><strong>主方向是 Agent 友好的 kernel DSL。</strong>Kernel Agent的预算应同时包含模型 token、编译次数、profiler 时间、模拟器和真实硬件测量。</p>
+<p>可以建立分级策略：代码模式检查、轻量 benchmark、profiler、IR 归因、编译器源码和更强模型依次升级，只有连续停滞才进入下一层。</p>
+<div class="review-box"><label>审阅笔记</label><textarea data-note-key="ares" placeholder="可记录：你的 Kernel Agent 每一级分析的时间和费用是多少？什么停滞条件适合触发升级？"></textarea><div class="saved">笔记仅保存在当前浏览器</div></div>
+</article>
+</section><section class="day-section" id="day-0801">
+<h2>8 月 1 日｜稀疏 ISA 协同设计与可执行 Agent 任务构造</h2>
+<div class="callout key"><strong>当日研究信号</strong><br/>当天两篇论文分别向下扩展到硬件指令，向上扩展到实验任务。Ventaglio说明新计算模式需要指令、元数据和状态存储共同设计；Change2Task说明 Agent benchmark 需要真实历史、现代环境和完整生命周期共同验证。</div>
+<article class="paper-card" data-search="At-the-Roofline Sparse Tensor Contractions on Vector Processors for Transformer Inference 为 RISC-V 向量处理器增加元数据驱动的稀疏累加能力，使中等稀疏计算接近屋顶线上限 Tile for DSA TileLang-TPU" data-track="Tile for DSA TileLang-TPU" id="ventaglio">
+<h2>At-the-Roofline Sparse Tensor Contractions on Vector Processors for Transformer Inference</h2>
+<div class="paper-meta"><span class="tag primary">Tile for DSA</span><span class="tag">RISC-V 稀疏执行</span><span class="badge strong">RTL 综合与校准模型，3.1% 面积</span></div>
+<p class="source-row"><strong>中文理解：</strong>为 RISC-V 向量处理器增加元数据驱动的稀疏累加能力，使中等稀疏计算接近屋顶线上限<br/>
+<strong>论文版本：</strong>arXiv:2607.25504v1，2026 年 7 月 28 日<br/>
+<strong>来源：</strong><a href="https://arxiv.org/abs/2607.25504" rel="noopener" target="_blank">arXiv 论文页</a></p>
+<h3>先给结论</h3>
+<p class="summary-line">输入是同时具有激活稀疏和权重稀疏的 Transformer 张量；Ventaglio直接解码压缩元数据，并在独立累加存储中执行索引乘加；输出是减少缓存和向量寄存器压力的稀疏张量收缩结果。</p>
+<h3>读懂它需要的最少背景</h3>
+<p>RISC-V 向量扩展（RISC-V Vector Extension，RVV）能表达通用向量访存和计算。中等稀疏矩阵向量乘需要根据元数据把非零乘积累加到不连续输出位置，普通 RVV 必须用软件解码索引并通过 L1 缓存保存部分和。</p>
+<p>屋顶线（Roofline）表示在给定计算与带宽能力下的性能上限。论文发现现有实现距离上限很远，主要损失并非乘法数量，而是索引和累加状态管理。</p>
+<h3>3 分钟理解</h3>
+<p><strong>总览。</strong>Ventaglio在向量处理集群中加入可配置稀疏执行单元、融合索引乘加指令和独立累加存储。硬件直接理解 1:4、2:4 或位图元数据，完成 gather、accumulate 和 scatter。结果是稀疏 kernel 减少软件索引、L1 往返和 VRF 占用。</p>
+<p><strong>旧方法。</strong>假设激活向量只有两个非零值。处理每个值时，软件读取对应权重行的压缩数据，解码输出索引，从 L1 或向量寄存器读取旧部分和，执行乘加，再写回。不同权重行可能更新同一输出，过程需要反复索引访存。</p>
+<p><strong>问题位置。</strong>现有 RVV缺少“根据压缩元数据直接更新展开输出”的原生路径。只增加稀疏乘法指令仍不能解决累加状态存放和地址更新。论文改变的假设是，稀疏执行需要同时设计指令、元数据通路和专用状态存储。</p>
+<div class="steps">
+<div class="step" data-step="1"><strong>配置稀疏格式。</strong>软件告诉执行单元当前使用 1:4、2:4 或位图编码，以及逻辑输出范围。</div>
+<div class="step" data-step="2"><strong>读取压缩数据。</strong>权重值和位置元数据一起进入稀疏执行单元，普通向量指令不再逐项展开索引。</div>
+<div class="step" data-step="3"><strong>融合索引乘加。</strong>新指令用当前非零激活乘权重，并直接定位目标部分和。</div>
+<div class="step" data-step="4"><strong>使用独立累加存储。</strong>展开输出保存在 VRF 之外，但通过逻辑向量寄存器编号访问，减少普通寄存器压力。</div>
+<div class="step" data-step="5"><strong>自动更新地址。</strong>访存指令完成后递增压缩权重和元数据指针，减少循环中的标量地址计算。</div>
+</div>
+<p><strong>完整例子。</strong>一个 2:4 权重组只保存两个非零值和它们在四个输出位置中的编号。融合指令读取当前激活和这组数据，直接从专用累加存储取出对应两个部分和，完成乘加后写回。同一输出若稍后被另一行更新，仍在该存储中继续累加，不必在 L1 和 VRF 之间往返。</p>
+<p><strong>回扣。</strong>方法有效，是因为它同时消除了索引解码、缓存往返、寄存器占用和地址更新四类开销。它依赖稀疏格式稳定且处于中等稀疏范围。接近稠密或极高稀疏时，其他执行方式可能更合适。</p>
+<h3>关键机制再拆一层</h3>
+<p>独立累加存储仍使用逻辑向量寄存器编号，兼顾了软件接口和硬件专用性。编译器需要知道哪些逻辑寄存器被映射到该存储，并在容量不足时分块。</p>
+<p>Ventaglio覆盖的是通用向量和完整矩阵加速器之间的空白。它适合不规则程度较高、但仍有足够连续工作可摊销控制开销的场景。</p>
+<h3>实验证据与边界</h3>
+<p>12 纳米实现中，四通道集群加入 Ventaglio 的逻辑面积增加约 3.1%，目标频率为 1 GHz，没有引入新的关键时序路径。周期级 kernel 仿真相对优化 RVV 基线加速 6.9 至 7.4 倍。</p>
+<p>作者用 RTL 校准的指令级模型分析 4×4 集群。DuoGPT 剪枝的 LLaMA-3-8B 在 40% 至 60% 双重稀疏下，预填充加速 2.40 至 5.25 倍，解码加速 2.06 至 3.16 倍。结果来自 RTL、综合和校准模型，没有真实流片芯片；系统功耗、温度和完整软件栈仍需验证。</p>
+<h3>与相关工作的关系</h3>
+<p>与普通 RVV 相比，Ventaglio增加专门的元数据和累加路径。与稀疏张量核心相比，它保留向量处理器的灵活控制，更适合矩阵向量和中等稀疏。</p>
+<p>ExaGEMM也共同探索 kernel 和 ISA，但关注低比特查表 GEMM。Ventaglio关注稀疏元数据和不规则累加。</p>
+<h3>对研究方向的具体启发</h3>
+<p><strong>主方向是 Tile for DSA。</strong>稀疏 tile 需要显式描述非零值布局、元数据格式、逻辑输出范围、累加状态位置和融合更新语义。tile 不再只是规则矩形。</p>
+<p><strong>次方向是 TileLang-TPU。</strong>后端可根据稀疏度和专用存储容量选择普通 TIU、SIMD 或稀疏单元，并生成容量不足时的分块与写回。</p>
+<div class="review-box">
+<label>审阅笔记</label>
+<textarea data-note-key="ventaglio" placeholder="可记录：SparseTile 应包含哪些字段，才能同时支持编译、性能模型和测试？"></textarea>
+<div class="saved">笔记仅保存在当前浏览器</div>
+</div>
+</article>
+<article class="paper-card" data-search="Change2Task: From Repository Changes to Executable Coding Agent Tasks and Environments 把历史仓库变更恢复成运行在现代健康版本上的可执行 Agent 任务 Agent DSL Tile Fuzz" data-track="Agent DSL Tile Fuzz" id="change2task">
+<h2>Change2Task: From Repository Changes to Executable Coding Agent Tasks and Environments</h2>
+<div class="paper-meta"><span class="tag primary">Agent kernel DSL</span><span class="tag">可执行 benchmark 构造</span><span class="badge strong">1130 个变更，79.6% 验证构造成功</span></div>
+<p class="source-row"><strong>中文理解：</strong>把历史仓库变更恢复成运行在现代健康版本上的可执行 Agent 任务<br/>
+<strong>论文版本：</strong>arXiv:2607.28591v1，2026 年 7 月 30 日<br/>
+<strong>来源：</strong><a href="https://arxiv.org/abs/2607.28591" rel="noopener" target="_blank">arXiv 论文页</a></p>
+<h3>先给结论</h3>
+<p class="summary-line">输入是已经合并的代码变更、现代仓库版本和开发者证据；系统重建变更发生前的任务状态，并验证从健康基线到待修复状态再到恢复状态的完整生命周期；输出是带环境、规格和自动判定的可执行编码任务。</p>
+<h3>读懂它需要的最少背景</h3>
+<p>代码 Agent benchmark 需要真实仓库状态、明确任务、可运行工具和可靠测试。直接保存历史 pull request 当时的容器会快速过时，也会重复存储大量相似环境。</p>
+<p>仓库历史包含真实开发者变更，但旧补丁往往无法直接应用到当前版本。文件移动、API 演进和测试变化都会破坏任务。</p>
+<h3>3 分钟理解</h3>
+<p><strong>总览。</strong>Change2Task从已合并变更中抽取任务意图，并尽量把任务重建在现代、可维护的仓库版本上。系统使用补丁反转、代码映射或 Agent 重建得到待完成状态，再验证健康基线、任务状态和恢复状态。最终生成可直接交给编码 Agent 的环境和判定。</p>
+<p><strong>旧方法。</strong>常见 benchmark 把历史 issue 和对应 PR 绑定到旧 commit。环境可能依赖失效的包和构建工具，任务数量也受限于能成功复现的历史快照。另一种方法只根据 PR 文本生成任务，却可能缺少真正的失败状态。</p>
+<p><strong>问题位置。</strong>开发者证据位于历史版本，稳定环境位于现代版本。两者之间存在代码演进差距。论文改变的假设是，任务不必永久冻结在旧 commit，可以把变更语义迁移到健康的新基线。</p>
+<div class="steps">
+<div class="step" data-step="1"><strong>筛选源变更。</strong>选择有明确补丁、测试或描述的已合并变更，并归入缺陷修复、功能、测试生成、API 迁移或安全修复。</div>
+<div class="step" data-step="2"><strong>选择现代基线。</strong>在当前维护版本上确认项目能够构建和通过原有测试。</div>
+<div class="step" data-step="3"><strong>重建任务状态。</strong>简单情况反转补丁；代码已移动时建立旧新代码映射；无法机械迁移时由 Agent 重建等价缺陷或缺失功能。</div>
+<div class="step" data-step="4"><strong>验证三阶段生命周期。</strong>健康基线必须通过，任务状态必须出现预期失败，恢复补丁必须重新通过。</div>
+<div class="step" data-step="5"><strong>封装任务。</strong>生成任务描述、工具环境、可见测试、隐藏判定和开发者证据。</div>
+</div>
+<p><strong>完整例子。</strong>历史 PR 把一个旧 API 迁移到新接口。多年后文件已经移动，原补丁不能直接反转。系统先在现代版本找到对应调用点，移除迁移后的写法并恢复一个能够编译但未完成新 API 适配的状态。测试必须在任务状态失败，重新应用现代化修复后通过。编码 Agent得到的是当前依赖和工具链，而任务仍来自真实历史变更。</p>
+<p><strong>回扣。</strong>方法有效，是因为它把任务语义与旧环境分开，同时用完整生命周期验证防止生成空任务。它依赖源变更有足够证据，代码映射或 Agent 重建也可能改变原问题。</p>
+<h3>关键机制再拆一层</h3>
+<p>三种重建方法按可信度和成本递增。补丁反转最接近历史事实，代码映射处理重构，Agent 重建覆盖机械方法无法处理的情况。每种任务应记录使用了哪种方法。</p>
+<p>健康基线、任务状态和恢复状态三次验证是核心 oracle。只验证最终修复通过，无法确认任务状态真的包含目标问题。</p>
+<h3>实验证据与边界</h3>
+<p>从 1130 个可构造源变更出发，系统在五类任务上取得 79.6% 的验证构造成功率。相对基于 PR 的构造基线，验证任务数量增加 29.2%。历史任务与重建任务在 Agent 评测中的结果一致率最高达到 98.0%，复用现代基线使完整流程测得开支降低 10.8%。</p>
+<p>这些指标主要评价任务构造质量和成本，不能直接证明使用这些任务训练会提高多少 Agent 能力。Agent 重建任务仍可能产生语义漂移，需要保留来源和重建证据。</p>
+<h3>与相关工作的关系</h3>
+<p>与 SWE-bench 一类历史 issue benchmark 相比，Change2Task强调在现代健康版本上复用环境。与 Harness Engineering 相比，它解决 benchmark 从哪里来，后者解决候选怎样评测。</p>
+<p>与 Tile Fuzz 的随机生成相比，仓库历史提供真实缺陷和工程场景，可以作为定向生成与回归测试的种子。</p>
+<h3>对研究方向的具体启发</h3>
+<p><strong>主方向是 Agent 友好的 kernel DSL。</strong>可以从 TileLang、Triton 或后端仓库的历史 PR 自动构建 kernel Agent 任务，包括性能修复、动态 shape 支持、后端适配和测试补全。</p>
+<p><strong>次方向是 Tile Fuzz。</strong>历史缺陷可转成可执行回归场景，再从每个场景提取语义变异和 oracle，扩大真实错误附近的测试空间。</p>
+<div class="review-box">
+<label>审阅笔记</label>
+<textarea data-note-key="change2task" placeholder="可记录：TileLang 仓库哪些 PR 最适合先转成可执行 Agent 任务？怎样验证任务状态确实保留原问题？"></textarea>
+<div class="saved">笔记仅保存在当前浏览器</div>
+</div>
+</article>
+</section>
+<section id="comparison">
+<h2>八天横向分析</h2>
+<p>下面的比较不按日期先后判断工作优劣，而是观察它们分别解决系统中的哪一类问题，依赖什么证据，以及能为哪些研究方向提供直接方法。</p>
+<h3 id="all-matrix">论文比较矩阵</h3>
+<div class="table-wrap">
+<table>
+<thead><tr><th>日期</th><th>工作</th><th>真正解决的问题</th><th>关键事实或 oracle</th><th>最强证据</th><th>主方向</th></tr></thead>
+<tbody>
+<tr><td>7/25</td><td>Resource Flow</td><td>抽象并发场景怎样稳定变成可执行测试</td><td>Petri 状态、部分序、分层 oracle</td><td>单场景端到端可行性</td><td>Tile Fuzz</td></tr>
+<tr><td>7/25</td><td>Float16 RISC-V ODT</td><td>标准半精度 ISA 怎样支撑完整设备端训练</td><td>训练精度、内存、Zfh 资源</td><td>内存约减半，精度接近</td><td>Tile for DSA</td></tr>
+<tr><td>7/26</td><td>Harness Engineering</td><td>怎样防止 Kernel Agent 通过错误评测获得虚假成功</td><td>独立 harness、全 workload、配对计时</td><td>B200 五类算子完整轨迹</td><td>Agent DSL</td></tr>
+<tr><td>7/27</td><td>DGNA</td><td>怎样从黑盒 GPU 恢复 NUMA 存储拓扑</td><td>跨 SM 延迟、统计聚类</td><td>A100/H100 真机</td><td>Tile for DSA</td></tr>
+<tr><td>7/27</td><td>WaveformQA</td><td>怎样可靠评测大模型的硬件时序推理</td><td>程序化真值、VCD/JSON 对照</td><td>360 问题、5 个 RISC-V 核</td><td>Agent DSL</td></tr>
+<tr><td>7/28</td><td>TileSight</td><td>怎样用 tile 统一单核、缓存和多 GPU 性能预测</td><td>资源向量、依赖、重用距离</td><td>四代 GPU、最多 32 GPU</td><td>TileLang-TPU</td></tr>
+<tr><td>7/28</td><td>Agentic CPU-GPU Scheduling</td><td>怎样在争用和显存变化下选择设备与执行时机</td><td>监控、对称重测、真实执行</td><td>13 个场景达到穷举最优</td><td>Agent DSL</td></tr>
+<tr><td>7/28</td><td>KaPilot</td><td>怎样生成可验证且不过强的 unsafe Rust 规格</td><td>文档安全要求、蕴含比较、Kani</td><td>124 个函数</td><td>unsafe Rust</td></tr>
+<tr><td>7/29</td><td>Compiler-Grounded Diagnosis</td><td>怎样把慢 kernel 追到具体编译原因</td><td>源码、profiler、IR、后端规则</td><td>Ascend 950，37 算子</td><td>Agent DSL</td></tr>
+<tr><td>7/29</td><td>Decoding the Skew</td><td>怎样根据 MoE 路由分布选择 kernel</td><td>专家直方图、离线调优、GPU 分派</td><td>B200 与真实服务轨迹</td><td>Tile for DSA</td></tr>
+<tr><td>7/29</td><td>HarnessLLM</td><td>怎样从真实测试恢复 unsafe Rust 验证入口</td><td>调用场景、参数依赖、Kani</td><td>9 项目、6 个真实缺陷</td><td>unsafe Rust</td></tr>
+<tr><td>7/30</td><td>Frontend Bugs</td><td>怎样把前端不一致转成根因分类和定向测试</td><td>历史缺陷、eager/compile 差分</td><td>123 个历史缺陷、23 个新缺陷</td><td>Tile Fuzz</td></tr>
+<tr><td>7/30</td><td>DOPS</td><td>怎样联合优化异构算子放置和持久权重布局</td><td>阶段 DAG、争用、容量、端到端延迟</td><td>多种 NPU/PIM 系统</td><td>Tile for DSA</td></tr>
+<tr><td>7/30</td><td>VClare</td><td>怎样识别和修复自然语言硬件规格缺陷</td><td>文本冲突、仿真行为聚类</td><td>单模块与多模块通过率提升</td><td>Agent DSL</td></tr>
+<tr><td>7/31</td><td>SpecFirst</td><td>怎样在从零编程前恢复稳定行为规格</td><td>文档、二进制探测、隐藏测试</td><td>ProgramBench 200 任务</td><td>Agent DSL</td></tr>
+<tr><td>7/31</td><td>NELSSA</td><td>怎样按长度放置请求并在上下文增长后迁移</td><td>GPU/PNM 原型、KV 状态、P99</td><td>吞吐最高 5.5×</td><td>Tile for DSA</td></tr>
+<tr><td>7/31</td><td>BMOA</td><td>怎样区分浮点差异、编译机制和准确率后果</td><td>多基线、局部变换、高精度</td><td>1276 条归因记录</td><td>Tile Fuzz</td></tr>
+<tr><td>7/31</td><td>ARES</td><td>怎样按停滞程度分配 Agent 推理成本</td><td>PPA、美元成本、耐心计数</td><td>同成本下 FoM 改善 23%—27%</td><td>Agent DSL</td></tr>
+<tr><td>8/1</td><td>Ventaglio</td><td>怎样让中等稀疏向量计算接近屋顶线上限</td><td>融合指令、元数据、专用累加存储</td><td>RTL 与校准模型，3.1% 面积</td><td>Tile for DSA</td></tr>
+<tr><td>8/1</td><td>Change2Task</td><td>怎样从仓库历史构造现代可执行 Agent 任务</td><td>三种重建、三阶段生命周期</td><td>1130 个变更，79.6% 成功</td><td>Agent DSL</td></tr>
+</tbody>
+</table>
+</div>
+<h3 id="relations">八天中最重要的八条关系</h3>
+<div class="grid two">
+<article class="relation"><strong>Resource Flow 与 HarnessLLM</strong><p>前者从状态模型生成并发场景，后者从已有测试恢复真实调用。二者结合后，真实场景可以继续扩展到新的生命周期和并发组合。</p></article>
+<article class="relation"><strong>Harness Engineering 与 Change2Task</strong><p>Change2Task负责提供真实、现代、可执行的任务；Harness Engineering负责规定候选怎样被裁判。两者分别解决 benchmark 供给和评测可信度。</p></article>
+<article class="relation"><strong>DGNA 与 TileSight</strong><p>DGNA产生真实硬件拓扑和延迟，TileSight消费这些事实进行 tile 性能预测。性能模型的上限取决于目标事实质量。</p></article>
+<article class="relation"><strong>WaveformQA 与 Compiler-Grounded Diagnosis</strong><p>两者都把底层执行证据转换成模型可理解的结构。前者处理时间事件，后者处理源码到 IR 和后端的归因。</p></article>
+<article class="relation"><strong>KaPilot 与 HarnessLLM</strong><p>HarnessLLM恢复怎样调用函数，KaPilot生成在这些调用上应满足什么安全条件，形成 unsafe Rust 验证的两部分。</p></article>
+<article class="relation"><strong>DA-MoE、DOPS 与 NELSSA</strong><p>运行时决策从 kernel 分派扩展到算子放置，再扩展到请求迁移。特征从负载分布增加到阶段、布局、长度和状态增长。</p></article>
+<article class="relation"><strong>Frontend Bugs 与 BMOA</strong><p>前者用根因分类指导输入生成，后者用证据分类解释数值差异。测试系统需要同时改进生成目标和结果归因。</p></article>
+<article class="relation"><strong>Float16 RISC-V 与 Ventaglio</strong><p>前者先建立标准 ISA 的完整软件基线，后者在稳定瓶颈上增加专用稀疏能力。新硬件设计应先明确通用路径无法解决的问题。</p></article>
+</div>
+<h3 id="gaps">仍值得继续研究的问题</h3>
+<ol>
+<li><strong>统一的 tile 语义合同。</strong>计算、资源生命周期、稀疏元数据、动态 shape 和运行时迁移仍分散在不同表示中。</li>
+<li><strong>规格到 oracle 的自动编译。</strong>SpecFirst、VClare、KaPilot和HarnessLLM分别处理规格、修复、证明和场景，但 kernel DSL 尚缺统一合同。</li>
+<li><strong>性能和正确性共用的事件表示。</strong>TileSight、WaveformQA和编译归因都需要事件与依赖，但目前工具接口不同。</li>
+<li><strong>面向真实缺陷的 Tile Fuzz。</strong>需要像 Frontend Bugs 和 Change2Task 一样，从历史缺陷与修复中形成生成模板、回归任务和缩减目标。</li>
+<li><strong>离线预测与在线选择的置信度接口。</strong>DA-MoE、DOPS和NELSSA需要知道当前输入是否仍处于离线模型覆盖范围。</li>
+<li><strong>Agent 成本的统一计量。</strong>ARES只计模型调用，Kernel Agent还需要加入编译、profiler、模拟器、真机测量和人工审阅成本。</li>
+</ol>
+</section>
+<section id="artifacts">
+<h2>可继续使用的研究产物</h2>
+<p>下列设计按照研究问题组织，不按生成日期或批次区分。每一项都可以继续细化为实现、实验或论文方法。</p>
+<div class="grid two">
+<article class="artifact"><h3>ResourceTile</h3><p>用 Free、Arriving、Ready、Consuming、Consumed 和 Reusable 表示 tile 与 buffer 生命周期，并由状态模型生成并发与流水测试。</p></article>
+<article class="artifact"><h3>PrecisionTargetProfile</h3><p>统一记录 dtype、累加类型、向量宽度、转换代价、训练梯度和冻结状态，服务于 RISC-V 与 DSA 半精度映射。</p></article>
+<article class="artifact"><h3>KernelHarness</h3><p>固定正确性、计时、工作负载、候选预算、晋升和失败证据，使代码 Agent 无法改变裁判。</p></article>
+<article class="artifact"><h3>NUMATile-Profile</h3><p>用微基准产生计算单元到存储分区的延迟矩阵，并将其加入 tile 放置和性能模型。</p></article>
+<article class="artifact"><h3>WaveformEventIR</h3><p>把底层波形转换成带时间、信号、语义对象和事件关系的记录，用于 Agent 时序推理和错误定位。</p></article>
+<article class="artifact"><h3>TileCostIR</h3><p>用 tile 资源向量、依赖、缓存重用和跨设备通信统一表达性能候选。</p></article>
+<article class="artifact"><h3>SafetySpecPipeline</h3><p>把真实调用场景、文档安全要求、Kani 规格、可满足性和强度比较组织为完整 unsafe Rust 验证流程。</p></article>
+<article class="artifact"><h3>KernelDiagnosticIR</h3><p>记录源码操作、profiler 症状、IR 归因、后端限制、候选假设和验证结果，为 Agent 提供证据支持的修改。</p></article>
+<article class="artifact"><h3>PlacementPolicyIR</h3><p>统一 kernel、算子和请求的在线选择，记录 shape、分布、阶段、布局、长度、迁移成本、置信度和回退条件。</p></article>
+<article class="artifact"><h3>FrontendBugMap</h3><p>把真实缺陷根因转换成 Tile Fuzz 的生成模板、覆盖维度、oracle 和错误缩减优先级。</p></article>
+<article class="artifact"><h3>SparseTileContract</h3><p>显式表示稀疏格式、非零布局、元数据、逻辑输出范围、累加存储和融合更新指令。</p></article>
+<article class="artifact"><h3>TaskHistoryBuilder</h3><p>从编译器和 kernel 仓库历史变更生成现代可执行任务，并验证健康基线、任务状态和恢复状态。</p></article>
+</div>
+<h3>统一接口草案</h3>
+<article class="artifact">
+<pre><code>research_case:
+  scenario:
+    source: documentation | tests | repository_history | runtime_trace
+    input_contract:
+    expected_behavior:
+
+  program:
+    tile_semantics:
+    schedule:
+    target:
+
+  evidence:
+    correctness:
+    performance:
+    hardware_facts:
+    attribution:
+
+  decision:
+    candidate_status:
+    confidence:
+    fallback:
+    next_measurement:</code></pre>
+<p>这份接口把八天论文中的共同结构放在一起。场景说明任务从哪里来，程序说明 tile 和目标怎样执行，证据说明结论由什么支持，决策说明当前候选是否可以使用以及还缺什么测量。</p>
+</article>
+</section>
+<section id="glossary">
+<h2>术语表</h2>
+<div class="glossary">
+<article><h3>部分序（Partial Order）</h3><p>只规定真正有因果关系的事件顺序，其他事件允许交换。它适合表示并发测试和异步流水。</p></article>
+<article><h3>非一致存储访问（Non-Uniform Memory Access，NUMA）</h3><p>不同计算单元访问同一层存储时具有不同延迟或带宽。</p></article>
+<article><h3>值变化转储（Value Change Dump，VCD）</h3><p>记录数字硬件信号随时间变化的标准格式，适合仿真工具，但对大模型并不直观。</p></article>
+<article><h3>中间表示归因（IR Attribution）</h3><p>把运行时性能或错误现象对应到编译器中间表示中的具体操作和转换。</p></article>
+<article><h3>有效专家数（Effective Experts）</h3><p>压缩 MoE 路由偏斜程度的指标，用来区分均匀分布和集中分布。</p></article>
+<article><h3>验证入口（Verification Harness）</h3><p>为形式工具构造对象、符号输入、调用和待证明性质的程序入口。</p></article>
+<article><h3>图断裂（Graph Break）</h3><p>前端暂时退出计算图捕获并回到普通执行的边界。状态处理不完整会造成语义错误。</p></article>
+<article><h3>近存处理（Processing-near-Memory，PNM）</h3><p>在大容量内存附近执行带宽密集计算，减少数据搬运。</p></article>
+<article><h3>基线—机制—后果归因（Baseline–Mechanism–Outcome Attribution，BMOA）</h3><p>分别记录比较关系、编译器行为证据和数值准确率后果，避免把任意浮点差异直接判为误编译。</p></article>
+<article><h3>专用累加存储（Dedicated Accumulation Storage）</h3><p>为稀疏或不规则计算保存展开部分和的独立片上存储，减少普通寄存器和缓存压力。</p></article>
+<article><h3>补丁反转（Patch Reversal）</h3><p>从包含修复的健康版本中反向移除变更，重建待完成任务状态。</p></article>
+<article><h3>替代价值（Replacement Quality）</h3><p>判断候选 kernel 除了算对之外，是否足够快、稳定并能替换现有实现。</p></article>
+</div>
+</section>
+<div class="callout key"><strong>八天横向判断</strong><br/>可靠的 AI 编译系统需要把任务、规格、候选、验证、硬件事实、性能归因和运行时选择分开管理。Tile 可以成为这些层之间的共同程序单位，但还需要补充资源生命周期、稀疏元数据、事件时序和证据置信度。Agent 适合生成和组合方案，独立工具负责事实和裁决。</div>
+</div>
+<div class="footer">整理范围：2026 年 7 月 25 日至 8 月 1 日。网页按八个阅读日期独立组织，所有论文使用统一讲解结构。单文件离线版，不依赖外部图片或脚本。</div>
+</main>
+</div>
+<button aria-label="返回顶部" class="back-top">↑</button>
+<script>
+(() => {
+  const root = document.documentElement;
+  const progress = document.getElementById('scroll-progress');
+  const backTop = document.querySelector('.back-top');
+  let scale = Number(localStorage.getItem('dac-font-scale') || 1);
+  const savedTheme = localStorage.getItem('dac-theme');
+  if (savedTheme) root.dataset.theme = savedTheme;
+  root.style.setProperty('--font-scale', scale);
+
+  function updateProgress(){
+    const max = document.documentElement.scrollHeight - innerHeight;
+    const ratio = max > 0 ? scrollY / max : 0;
+    progress.style.width = `${Math.min(100, ratio * 100)}%`;
+    backTop.classList.toggle('show', scrollY > 500);
+  }
+  addEventListener('scroll', updateProgress, {passive:true});
+  updateProgress();
+
+  document.querySelector('[data-action="font-up"]').addEventListener('click', () => {
+    scale = Math.min(1.22, +(scale + .05).toFixed(2));
+    root.style.setProperty('--font-scale', scale);
+    localStorage.setItem('dac-font-scale', scale);
+  });
+  document.querySelector('[data-action="font-down"]').addEventListener('click', () => {
+    scale = Math.max(.88, +(scale - .05).toFixed(2));
+    root.style.setProperty('--font-scale', scale);
+    localStorage.setItem('dac-font-scale', scale);
+  });
+  document.querySelector('[data-action="theme"]').addEventListener('click', () => {
+    root.dataset.theme = root.dataset.theme === 'dark' ? 'light' : 'dark';
+    localStorage.setItem('dac-theme', root.dataset.theme);
+  });
+  document.querySelector('[data-action="print"]').addEventListener('click', () => print());
+  backTop.addEventListener('click', () => scrollTo({top:0,behavior:'smooth'}));
+
+  const cards = [...document.querySelectorAll('.paper-card[data-track]')];
+  const buttons = [...document.querySelectorAll('.filter-button')];
+  const search = document.getElementById('paper-search');
+  let activeFilter = 'all';
+
+  function applyFilter(){
+    const q = (search.value || '').trim().toLowerCase();
+    cards.forEach(card => {
+      const track = card.dataset.track || '';
+      const hay = `${card.dataset.search || ''} ${card.textContent}`.toLowerCase();
+      const filterOk = activeFilter === 'all' || track.includes(activeFilter);
+      const searchOk = !q || hay.includes(q);
+      card.classList.toggle('hidden', !(filterOk && searchOk));
+    });
+    document.querySelectorAll('.day-section').forEach(section => {
+      const visible = [...section.querySelectorAll('.paper-card[data-track]')].some(card => !card.classList.contains('hidden'));
+      section.classList.toggle('hidden', !visible);
+    });
+  }
+  buttons.forEach(btn => btn.addEventListener('click', () => {
+    buttons.forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    activeFilter = btn.dataset.filter;
+    applyFilter();
+  }));
+  search.addEventListener('input', applyFilter);
+
+  document.querySelectorAll('.review-box textarea').forEach(area => {
+    const key = `dac-note:${area.dataset.noteKey}`;
+    area.value = localStorage.getItem(key) || '';
+    area.addEventListener('input', () => localStorage.setItem(key, area.value));
+  });
+
+  const links = [...document.querySelectorAll('.top-nav a')];
+  const sections = links.map(a => document.querySelector(a.getAttribute('href'))).filter(Boolean);
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if(entry.isIntersecting){
+        links.forEach(a => a.classList.toggle('active', a.getAttribute('href') === `#${entry.target.id}`));
+      }
+    });
+  }, {rootMargin:'-25% 0px -68% 0px'});
+  sections.forEach(s => observer.observe(s));
+})();
+</script>
+</body>
+</html>

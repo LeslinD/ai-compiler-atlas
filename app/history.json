@@ -1,0 +1,296 @@
+[
+  {
+    "id": "resource-flow-tests",
+    "title": "From Resource Flow to Executable Tests",
+    "chineseTitle": "先用资源流和并发关系确定测试场景，再让大模型完成 Rust 代码实现",
+    "arxiv": "2607.21530",
+    "source": "https://arxiv.org/abs/2607.21530",
+    "readingDate": "2026-07-25",
+    "tracks": [
+      "Tile Fuzz",
+      "LLM for unsafe Rust"
+    ],
+    "archiveHref": "/historical-insights.html#resource-flow-tests",
+    "kind": "archive",
+    "index": 0
+  },
+  {
+    "id": "riscv-fp16-odt",
+    "title": "Hardware-Software Co-Design for Float16 On-Device Training on RISC-V Single-Core",
+    "chineseTitle": "用标准 RISC-V 半精度扩展支持资源受限设备上的完整训练",
+    "arxiv": "2607.21130",
+    "source": "https://arxiv.org/abs/2607.21130",
+    "readingDate": "2026-07-25",
+    "tracks": [
+      "Tile for DSA"
+    ],
+    "archiveHref": "/historical-insights.html#riscv-fp16-odt",
+    "kind": "archive",
+    "index": 1
+  },
+  {
+    "id": "harness-engineering",
+    "title": "Harness Engineering for LLM-Driven GPU Kernel Generation",
+    "chineseTitle": "用独立评测框架约束大模型生成 GPU kernel，并以完整工作负载决定候选晋升",
+    "arxiv": "2607.17979",
+    "source": "https://arxiv.org/abs/2607.17979",
+    "readingDate": "2026-07-26",
+    "tracks": [
+      "Tile Fuzz",
+      "Agent kernel DSL"
+    ],
+    "archiveHref": "/historical-insights.html#harness-engineering",
+    "kind": "archive",
+    "index": 2
+  },
+  {
+    "id": "dgna",
+    "title": "DGNA: Dissecting GPU NUMA Architecture through Microbenchmarking and Data Analysis",
+    "chineseTitle": "通过可移植微基准和统计分析恢复 GPU 内部隐藏的非一致存储访问结构",
+    "arxiv": "2607.19922",
+    "source": "https://arxiv.org/abs/2607.19922",
+    "readingDate": "2026-07-27",
+    "tracks": [
+      "TileLang-TPU",
+      "Tile for DSA"
+    ],
+    "archiveHref": "/historical-insights.html#dgna",
+    "kind": "archive",
+    "index": 3
+  },
+  {
+    "id": "waveformqa",
+    "title": "WaveformQA: Benchmarking LLM Temporal Reasoning on Digital Waveforms",
+    "chineseTitle": "评测大模型能否从数字波形中理解事件顺序、多信号关系和触发时延",
+    "arxiv": "2607.20638",
+    "source": "https://arxiv.org/abs/2607.20638",
+    "readingDate": "2026-07-27",
+    "tracks": [
+      "Tile for DSA",
+      "Agent kernel DSL"
+    ],
+    "archiveHref": "/historical-insights.html#waveformqa",
+    "kind": "archive",
+    "index": 4
+  },
+  {
+    "id": "tilesight",
+    "title": "TileSight: A First-Principles Tile-Centric Analytical GPU Performance Model from Cores to Clusters",
+    "chineseTitle": "把 tile 从编程单位提升为统一的性能分析单位",
+    "arxiv": "2607.22432",
+    "source": "https://arxiv.org/abs/2607.22432",
+    "readingDate": "2026-07-28",
+    "tracks": [
+      "TileLang-TPU",
+      "Tile for DSA"
+    ],
+    "archiveHref": "/historical-insights.html#tilesight",
+    "kind": "archive",
+    "index": 5
+  },
+  {
+    "id": "agentic-cpu-gpu-scheduling",
+    "title": "Agentic CPU-GPU Scheduling for Heterogeneous AI Workloads",
+    "chineseTitle": "让大模型在运行时证据支持下选择立即用 GPU、排队等 GPU 或转到 CPU",
+    "arxiv": "2607.22242",
+    "source": "https://arxiv.org/abs/2607.22242",
+    "readingDate": "2026-07-28",
+    "tracks": [
+      "Tile for DSA",
+      "Agent kernel DSL"
+    ],
+    "archiveHref": "/historical-insights.html#agentic-cpu-gpu-scheduling",
+    "kind": "archive",
+    "index": 6
+  },
+  {
+    "id": "kapilot",
+    "title": "KaPilot: LLM-Assisted Generation of Kani Specifications for Unsafe Rust Verification",
+    "chineseTitle": "从文档中的安全要求出发生成 Kani 前置条件、后置条件和循环不变量",
+    "arxiv": "2607.21957",
+    "source": "https://arxiv.org/abs/2607.21957",
+    "readingDate": "2026-07-28",
+    "tracks": [
+      "Agent kernel DSL",
+      "LLM for unsafe Rust"
+    ],
+    "archiveHref": "/historical-insights.html#kapilot",
+    "kind": "archive",
+    "index": 7
+  },
+  {
+    "id": "compiler-grounded-diagnosis",
+    "title": "Compiler-Grounded Hierarchical Diagnosis for LLM-Based Triton Kernel Optimization",
+    "chineseTitle": "从运行时症状逐层追到中间表示和后端行为，再生成有证据支持的源码修改",
+    "arxiv": "2607.23089",
+    "source": "https://arxiv.org/abs/2607.23089",
+    "readingDate": "2026-07-29",
+    "tracks": [
+      "TileLang-TPU",
+      "Agent kernel DSL"
+    ],
+    "archiveHref": "/historical-insights.html#compiler-grounded-diagnosis",
+    "kind": "archive",
+    "index": 8
+  },
+  {
+    "id": "decoding-skew",
+    "title": "Decoding the Skew: Distribution-Aware MoE Inference with Adaptive Kernel Dispatch",
+    "chineseTitle": "根据专家负载分布而非 token 总数选择融合 MoE kernel",
+    "arxiv": "2607.23099",
+    "source": "https://arxiv.org/abs/2607.23099",
+    "readingDate": "2026-07-29",
+    "tracks": [
+      "TileLang-TPU",
+      "Tile for DSA"
+    ],
+    "archiveHref": "/historical-insights.html#decoding-skew",
+    "kind": "archive",
+    "index": 9
+  },
+  {
+    "id": "harnessllm",
+    "title": "HarnessLLM: Rust Verification Harness Generation with Large Language Models",
+    "chineseTitle": "从项目已有单元测试恢复真实调用场景，再生成 Kani 验证入口",
+    "arxiv": "2607.22161",
+    "source": "https://arxiv.org/abs/2607.22161",
+    "readingDate": "2026-07-29",
+    "tracks": [
+      "Agent kernel DSL",
+      "LLM for unsafe Rust"
+    ],
+    "archiveHref": "/historical-insights.html#harnessllm",
+    "kind": "archive",
+    "index": 10
+  },
+  {
+    "id": "frontend-bugs",
+    "title": "Demystifying Deep Learning Compiler Frontend Bugs",
+    "chineseTitle": "系统分析 TorchDynamo 前端缺陷，并用根因分类指导定向测试",
+    "arxiv": "2607.25651",
+    "source": "https://arxiv.org/abs/2607.25651",
+    "readingDate": "2026-07-30",
+    "tracks": [
+      "Tile Fuzz"
+    ],
+    "archiveHref": "/historical-insights.html#frontend-bugs",
+    "kind": "archive",
+    "index": 11
+  },
+  {
+    "id": "dops",
+    "title": "Beyond Prefill-Decode Disaggregation: Dynamic Operator Scheduling",
+    "chineseTitle": "同时决定算子放在哪个设备，以及持久权重以什么分块布局保存",
+    "arxiv": "2607.25498",
+    "source": "https://arxiv.org/abs/2607.25498",
+    "readingDate": "2026-07-30",
+    "tracks": [
+      "TileLang-TPU",
+      "Tile for DSA"
+    ],
+    "archiveHref": "/historical-insights.html#dops",
+    "kind": "archive",
+    "index": 12
+  },
+  {
+    "id": "vclare",
+    "title": "VClare: Resolving Imperfect Specifications in LLM-Based Verilog Generation",
+    "chineseTitle": "在生成 Verilog 之前发现并修复自然语言规格中的含糊、矛盾和缺失",
+    "arxiv": "2607.24854",
+    "source": "https://arxiv.org/abs/2607.24854",
+    "readingDate": "2026-07-30",
+    "tracks": [
+      "Tile for DSA",
+      "Agent kernel DSL"
+    ],
+    "archiveHref": "/historical-insights.html#vclare",
+    "kind": "archive",
+    "index": 13
+  },
+  {
+    "id": "specfirst",
+    "title": "SpecFirst: Behavioral Specification Elicitation as a First-Class Step in Program Synthesis",
+    "chineseTitle": "要求 Agent 先探测参考程序并形成固定行为规格，再开始从零实现代码",
+    "arxiv": "2607.27167",
+    "source": "https://arxiv.org/abs/2607.27167",
+    "readingDate": "2026-07-31",
+    "tracks": [
+      "Agent kernel DSL"
+    ],
+    "archiveHref": "/historical-insights.html#specfirst",
+    "kind": "archive",
+    "index": 14
+  },
+  {
+    "id": "nelssa",
+    "title": "NELSSA: GPU-PNM Serving via Length-Based Request Placement",
+    "chineseTitle": "按当前上下文长度选择 GPU 或近存设备，并在请求增长后迁移 KV 状态",
+    "arxiv": "2607.26633",
+    "source": "https://arxiv.org/abs/2607.26633",
+    "readingDate": "2026-07-31",
+    "tracks": [
+      "Tile for DSA"
+    ],
+    "archiveHref": "/historical-insights.html#nelssa",
+    "kind": "archive",
+    "index": 15
+  },
+  {
+    "id": "bmoa",
+    "title": "BMOA: Baseline–Mechanism–Outcome Attribution for Numerical Deviations",
+    "chineseTitle": "把浮点差异拆成比较基线、编译机制证据和真实数值后果",
+    "arxiv": "2607.27270",
+    "source": "https://arxiv.org/abs/2607.27270",
+    "readingDate": "2026-07-31",
+    "tracks": [
+      "Tile Fuzz"
+    ],
+    "archiveHref": "/historical-insights.html#bmoa",
+    "kind": "archive",
+    "index": 16
+  },
+  {
+    "id": "ares",
+    "title": "ARES: Adaptive Reasoning-Effort Steering for PPA- and Cost-Aware RTL Optimization",
+    "chineseTitle": "低成本推理停滞后才升级到更深推理，使 RTL 优化质量与模型调用成本共同可控",
+    "arxiv": "2607.27879",
+    "source": "https://arxiv.org/abs/2607.27879",
+    "readingDate": "2026-07-31",
+    "tracks": [
+      "Agent kernel DSL"
+    ],
+    "archiveHref": "/historical-insights.html#ares",
+    "kind": "archive",
+    "index": 17
+  },
+  {
+    "id": "ventaglio",
+    "title": "At-the-Roofline Sparse Tensor Contractions on Vector Processors for Transformer Inference",
+    "chineseTitle": "为 RISC-V 向量处理器增加元数据驱动的稀疏累加能力，使中等稀疏计算接近屋顶线上限",
+    "arxiv": "2607.25504",
+    "source": "https://arxiv.org/abs/2607.25504",
+    "readingDate": "2026-08-01",
+    "tracks": [
+      "TileLang-TPU",
+      "Tile for DSA"
+    ],
+    "archiveHref": "/historical-insights.html#ventaglio",
+    "kind": "archive",
+    "index": 18
+  },
+  {
+    "id": "change2task",
+    "title": "Change2Task: From Repository Changes to Executable Coding Agent Tasks and Environments",
+    "chineseTitle": "把历史仓库变更恢复成运行在现代健康版本上的可执行 Agent 任务",
+    "arxiv": "2607.28591",
+    "source": "https://arxiv.org/abs/2607.28591",
+    "readingDate": "2026-08-01",
+    "tracks": [
+      "Tile Fuzz",
+      "Agent kernel DSL"
+    ],
+    "archiveHref": "/historical-insights.html#change2task",
+    "kind": "archive",
+    "index": 19
+  }
+]
