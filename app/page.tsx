@@ -62,6 +62,8 @@ const dateTitles: Record<string, string> = {
   "2026-08-12": "真实任务与硬件可用性",
   "2026-08-13": "可检查的 kernel 演化",
   "2026-08-14": "合同验证与真实状态回放",
+  "2026-08-15": "可执行合同与综合反馈",
+  "2026-08-16": "规格差分与仓库级证明",
 };
 
 function dateLabel(value: string) {
