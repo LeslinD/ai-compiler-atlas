@@ -72,6 +72,7 @@ const dateTitles: Record<string, string> = {
   "2026-08-22": "优化启发式的性能保证",
   "2026-08-23": "实现空间选择与 GPU kernel 优化",
   "2026-08-24": "GPU 编译可移植性",
+  "2026-08-25": "布局选择的全局代价",
 };
 
 function dateLabel(value: string) {
