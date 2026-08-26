@@ -1,0 +1,162 @@
+[
+  {
+    "id": "sparseditto",
+    "title": "SparseDitto: Customizing GPU Kernels for Different Sparsity Patterns with LLM-Based Agentic System",
+    "zhTitle": "按稀疏模式定制 GPU kernel",
+    "arxiv": "2608.05033",
+    "track": "Agent 友好的 kernel DSL",
+    "secondary": "Tile for DSA",
+    "conclusion": "SparseDitto 不寻找一个对所有稀疏矩阵都最好的统一 kernel。它先用矩阵结构特征筛选已有策略，再让架构规划、代码生成和验证 Agent 针对具体矩阵、算子和目标 GPU 组合格式、数据流与实现。核心价值是把 Agent 搜索建立在可测的稀疏结构上。",
+    "background": "同一个 SpMM 在不同稀疏模式和存储格式上可能相差数百倍。稀疏度百分比相同，并不表示行长度分布、块结构、局部密度和负载均衡相同。只按算子名称选择 CSR 或 Blocked-ELL，容易在另一类矩阵上失效。",
+    "flow": [
+      "输入是矩阵、SpMV/SpMM/SpGEMM 算子和目标 GPU。系统先提取行长度、块密度、分布离散度等结构特征。",
+      "轻量加性模型根据这些特征给成熟格式和执行策略排序，先排除明显不合适的设计，避免让 Agent 从空白 CUDA 开始。",
+      "架构感知规划器提出少量候选，明确数据格式、线程或块分工、共享内存和归约方式。",
+      "代码与验证 Agent 实现候选，使用编译错误、数值检查和目标 GPU 测量继续修正。",
+      "最终保留的不是一条通用规则，而是与矩阵结构、算子和硬件版本绑定的 kernel 与测量证据。"
+    ],
+    "evidence": "在 NVIDIA RTX PRO 6000 上，三个稀疏算子的几何平均加速为 2.68 倍，最大 146.61 倍；H200 上为 2.79 倍，最大 78.5 倍。生成的 SpMM 还使全批量 GCN 训练最高加速 3.39 倍。",
+    "limits": "搜索和生成成本高于普通库调用，收益依赖矩阵集合、GPU 和可用候选策略。论文没有证明新矩阵分布上无需重新测量。",
+    "relation": "对 Tile for DSA，可把稀疏元数据、块结构和负载不均衡写进 workload contract，再让 Agent 选择格式、tile 和执行模板；不要把“稀疏”压成一个比例。"
+  },
+  {
+    "id": "repoomp",
+    "title": "RepoOMP: Repository-Aware Hotspot OpenMP Parallelization via Dependency-Aware Context Reduction",
+    "zhTitle": "用依赖证据支撑仓库级热点并行化",
+    "arxiv": "2608.05855",
+    "track": "Agent 友好的 kernel DSL",
+    "secondary": "Tile Fuzz",
+    "conclusion": "RepoOMP 让 Agent 在成熟仓库中并行化热点函数，但不把完整仓库和全部历史直接塞进上下文。它先用静态依赖、调用关系和 profile 把真正影响当前热点的代码缩成结构化证据，再让模型提出 OpenMP 修改，并由真实编译、测试和 benchmark 验收。",
+    "background": "一个循环能否并行，常依赖外部 helper、全局状态、数据别名和调用方约定。只给局部函数，模型容易漏依赖；给整个仓库，又会被大量无关代码淹没。仓库级并行化因此首先是上下文选择问题。",
+    "flow": [
+      "输入是可构建仓库和性能 workload。系统先用 profiler 找到真正热点，而不是让模型猜优化位置。",
+      "静态分析从热点向外追踪调用、类型、全局变量、别名和必要定义，构造最小但完整的 repository context。",
+      "Agent 基于这份证据提出 OpenMP pragma、循环重构或数据作用域修改，并明确它依赖的并行安全假设。",
+      "候选在原仓库中编译和运行完整测试，再用固定 workload 进行真实性能比较。",
+      "失败诊断被归类为构建、语义、数据竞争或性能问题，下一轮只补充真正缺失的上下文。"
+    ],
+    "evidence": "论文在 20 个 C/C++ 仓库、74 个热点任务上评测，相对无 Agent 和一般仓库 Agent 基线显著提高可编译、正确并获得加速的修复数量。依赖感知上下文在保持较小 prompt 的同时提高了并行化成功率。",
+    "limits": "OpenMP 任务和 CPU 热点与 GPU kernel 不同。静态依赖分析也可能遗漏反射式调用、复杂别名和输入相关依赖。",
+    "relation": "Kernel Agent 也应先从 profiler 和 IR provenance 生成最小证据包。让模型读取完整编译器仓库，不等于提供了有用上下文；需要明确哪些 pass、目标规则和调用关系真正造成当前现象。"
+  },
+  {
+    "id": "pace",
+    "title": "PACE: Primitive-Aware Code Evolution for Automated Algorithm Design",
+    "zhTitle": "把搜索中的局部好方法变成可复用程序原语",
+    "arxiv": "2608.07395",
+    "track": "Agent 友好的 kernel DSL",
+    "secondary": "Tile Fuzz",
+    "conclusion": "PACE 不只保存完整候选程序，还把搜索中出现的有用局部逻辑抽成可执行函数，并让这些原语脱离原程序长期存在。它通过控制父程序、只加入一个新原语并比较前后分数，逐渐积累该原语是否具有迁移价值的证据。",
+    "background": "完整程序包含很多同时变化的决定。一个候选整体变差，不代表其中每一项局部修改都无效；如果低分程序被整体删除，真正有价值的局部结构也会一起消失。自然语言总结又不能保证后续候选真的复用同一段逻辑。",
+    "flow": [
+      "系统仍然维护完整程序候选，同时建立持久的可执行算法原语库。优秀程序中的局部逻辑可以被重构成独立函数。",
+      "搜索使用插入、替换、保留原语后改进和交叉四类受约束操作。AST 检查器验证新程序是否真的保留或加入指定原语。",
+      "插入操作中，固定一个父程序，只增加一个原语。如果子程序得分更高，就为该原语增加一次正面证据；失败则增加负面证据。",
+      "每个原语维护 Beta 分布，使用汤普森采样在已经表现较好的原语和证据不足的新原语之间分配搜索机会。",
+      "完整程序即使后来被淘汰，已经进入原语库的局部方法仍可被其他候选继续调用。"
+    ],
+    "evidence": "PACE 在 Racing Car、Bipedal Walker、TSP-Construct 和 TSP-ACO 上测试，每种方法独立运行三次、每次 1000 次 evaluator 调用。TSP-ACO 只在 n=50 演化，却在 n=200、500、1000 上取得最好结果。去掉汤普森采样和四类结构化操作都会降低成绩。",
+    "limits": "原语之间可能存在强交互。Tile、layout、流水和片上存储往往只有组合后才有效，对单个原语独立计分可能产生误导。搜索 token 也明显高于简单完整程序演化。",
+    "relation": "Kernel Agent 可以保存双缓冲、边界 tile、归约结构和 layout 变换等有稳定 IR 身份的原语，但统计必须绑定硬件、算子、dtype 和 shape，不能维护一个脱离上下文的全局成功率。"
+  },
+  {
+    "id": "pdfuzzer",
+    "title": "From Documentation to Zero-day Vulnerabilities: LLM-Driven Fuzzing of JavaScript Engines in PDF Readers",
+    "zhTitle": "PDFuzzer：从文档恢复跨 API 语义关系并生成测试",
+    "arxiv": "2608.06641",
+    "track": "Tile Fuzz",
+    "secondary": "Agent 友好的 kernel DSL",
+    "conclusion": "PDFuzzer 说明复杂有效测试依赖的远不只是生产者—消费者数据流。多个 API 之间还可能要求参数相等、特定调用顺序和隐藏状态关系。系统让 LLM 从文档和执行记录中发现这些关系，再编译成文法与 SMT 约束，由普通生成器高速产生满足条件的测试。",
+    "background": "单个 API 调用可以语法正确，但多个调用随机组合往往没有共同语义。例如先创建名字为 x 的对象，再查询名字为 y 的对象，如果 x 与 y 独立随机，测试永远进不到同一对象的复杂状态。只看类型和返回值也发现不了这种条件。",
+    "flow": [
+      "系统从官方文档提取 API 规格；没有文档的 API 先从执行轨迹恢复最小签名，再由 LLM 补充参数含义和约束。",
+      "每个参数单独生成上下文无关文法，保留枚举范围、字符串格式和嵌套对象结构。",
+      "检索先缩小可能相关的 API 对，LLM 再判断参数关系、执行顺序和共享状态，并输出结构化 JSON 与 SMT-LIB 约束。",
+      "真正 fuzzing 时，grammar generator 生成单调用参数，Z3 为跨调用符号变量求同时满足全部关系的具体值。",
+      "测试在真实 PDF Reader 中执行；复杂关系主要负责提高深层状态到达率，crash 与差分证据负责最终判错。"
+    ],
+    "evidence": "系统覆盖 Adobe Acrobat Reader、Foxit 和 PDF-XChange，恢复 666 个 API 和 886 个参数文法。相对现有工具最高提高 48% 代码覆盖，两周内整理出 31 个独立零日漏洞。1019 条强关系中，生产者—消费者只占 6.8%，参数值约束占 87%。",
+    "limits": "目标是 PDF JavaScript API，不是编译器。隐式状态关系实例化成功率只有 64%，而且完整公开仓库仍缺少部分生成数据与执行轨迹。",
+    "relation": "Tile Fuzz 也不能只依赖 IR use-def。DMA 对齐、tile shape、wait 顺序、buffer 生命周期和 mask 范围应显式成为可求解关系，帮助生成复杂但仍然合法的 schedule。"
+  },
+  {
+    "id": "hint",
+    "title": "HINT: Toward an Executable Hardware-Intent Representation Layer for LLM-Driven RTL Generation",
+    "zhTitle": "HINT：在行为规格与 RTL 之间加入可执行硬件意图",
+    "arxiv": "2608.07625",
+    "track": "Tile for DSA",
+    "secondary": "Agent 友好的 kernel DSL",
+    "conclusion": "HINT 在自然语言或 C/C++ 行为规格与 RTL 之间增加一层可执行硬件意图。它先固定状态所有权、资源复用、执行阶段和时间合同，再让 Agent 将已经验证的设计降低为 RTL，从而把微架构错误和低层实现错误分开。",
+    "background": "直接生成 RTL 时，模型要同时决定资源复制或复用、持久状态、流水阶段，又要处理 reset、握手和 always block。出现失败后，很难判断是算法理解、微架构选择还是一条 RTL 赋值出了问题。自然语言计划又无法机器检查。",
+    "flow": [
+      "输入是自然语言硬件规格、可执行参考模型或两者。系统先冻结接口、测试和时间合同，设计 Agent 不能修改这些评价规则。",
+      "Agent 生成硬件意图，显式写出固定宽度类型、transaction 接口、持久状态、资源共享、存储安排和有限执行进度。",
+      "checker 检查状态所有权、动态内存、递归和资源数量，再运行硬件意图，与参考模型或 transaction test 比较。",
+      "意图通过后被冻结，后续 RTL 生成必须保持状态、资源和执行安排；若要改变微架构，必须返回意图阶段重新验证。",
+      "RTL 再接受同一批测试和时间合同，最后进入逻辑综合，面积与关键路径结果可用于下一轮重新设计。"
+    ],
+    "evidence": "七个算子级任务全部生成满足合同的可综合 RTL。五个可比较任务中，HINT 与直接 C-to-RTL 都成功，但 HINT 面积小 8.9%–86.1%。方法还扩展到 AES、SD 卡控制器和 Vortex GPU 非浮点向量处理子系统；主要数字来自 SKY130 逻辑综合，不是真实流片。",
+    "limits": "只有一个基础模型，只有 Hif8_mul 做了网表级等价检查，其他任务主要依靠测试。完整 HINT 规格仍处于评审期研究原型。",
+    "relation": "新 DSA 后端可在 target description 与具体 lowering 之间增加可执行映射合同，先验证计算单元、存储、DMA、资源和阶段安排，再生成 intrinsic、地址和同步细节。"
+  },
+  {
+    "id": "adaptcore",
+    "title": "Adaptive Matrix Multiplication for Dynamic Shapes on Ascend NPUs",
+    "zhTitle": "AdaptCore：动态 shape 下的两级 MatMul 调度",
+    "arxiv": "2608.10803",
+    "track": "TileLang-TPU",
+    "secondary": "Tile for DSA",
+    "conclusion": "AdaptCore 将动态 MatMul 调度拆成两层。第一层决定沿 M、N、K 怎样给多个 AICore 分任务，解决计算核利用率；第二层决定单核内部 L1/L0 tile、片上累加和 DMA 流水，解决数据复用与容量。分析式模型离线排序候选，运行时只查表。",
+    "background": "固定 tile 在方阵上可能很好，遇到 M、N 很小而 K 很大时却只产生少量空间任务，大量计算核闲置。盲目缩小 tile 能增加任务数，却会损失复用；盲目放大 tile 又可能让 FP32 部分和放不进片上累加存储，产生额外写回。",
+    "flow": [
+      "输入是 M、N、K、数据类型和 Ascend 的核数、片上容量、DMA 带宽、指令与对齐参数。",
+      "系统先判断 M/N 空间任务是否足够，以及单核 FP32 累加 tile 是否能完整驻留片上，由两个条件形成四类基础执行计划。",
+      "空间任务不足时继续沿 K 拆分，让多个核共同计算一个输出 tile，并显式生成跨核归约；容量不足时允许部分和阶段性写回。",
+      "基础方案上再组合 padding、数据驻留、双缓冲、预加载和访问顺序等优化，并先做容量与合法性检查。",
+      "分析式模型将 kernel 拆成前导、各核主阶段和收尾，显式估计 DMA 指令固定开销、有效带宽、计算和软件流水启动间隔；离线选好后编译成 TilingKey。"
+    ],
+    "evidence": "实验在真实 Ascend 910B、CANN 9.0 上完成，包含约 8 万个动态 MatMul shape。相对官方 ACLNN 平均加速 1.85 倍，五个推荐模型端到端提升 1.09–1.48 倍。模型 Top-1 只在 63.86% 情况下选中穷举最快配置，但 91.3% 的 shape 仍快于 ACLNN。",
+    "limits": "模板和经验参数依赖 Ascend 存储与执行单元。正式比较没有纳入 Triton-Ascend，代码也未公开；当前主要覆盖 MatMul、GroupMM 和 BatchMM。",
+    "relation": "TileLang-TPU 可直接借鉴两级决策：先选跨核 M/N/K 划分，再做单核 LMEM、DMA、buffer 生命周期和流水。cost model 不必精确模拟全部周期，只需稳定过滤非法和明显较差候选。"
+  },
+  {
+    "id": "xamt",
+    "title": "Testing Deep Learning Library APIs via Cross-Framework Differential Fuzzing",
+    "zhTitle": "Xamt：执行验证后的跨框架差分测试",
+    "arxiv": "2608.11886",
+    "track": "Tile Fuzz",
+    "secondary": "Agent 友好的 kernel DSL",
+    "conclusion": "Xamt 先解决差分测试最容易被忽略的前提：多个 API 是否真的处于共同语义域。系统根据名称和参数角色找候选，再用真实执行筛掉伪等价组，最后才生成边界值、NaN 和 Inf 做跨框架差分。",
+    "background": "PyTorch、TensorFlow、JAX 中同一逻辑操作名称、参数名、默认值和支持 rank 可能不同。仅按函数名匹配会把接口语义差异误报成 bug；同一框架 CPU/GPU 还可能共享同一个错误实现。",
+    "flow": [
+      "系统通过运行时反射收集七个框架 API，并将 clamp/clip、dim/axis/axes 等名称和参数角色归一化。",
+      "静态候选只用于发现可能关系。API 对先在共同普通输入上真实执行，只有都成功且结果一致，才进入 pairwise 关系。",
+      "整个 connected component 再在同一 canonical input 上验证，防止 A 与 B、B 与 C 一致却 A 与 C 不一致。",
+      "统一逻辑输入经 adapter 转成各框架 tensor，并加入零、极值、定义域边界、NaN 和正负 Inf。",
+      "实现间数值分歧只用于指导下一轮变异；最终 crash、shape、NaN/Inf mask 和有限值 Oracle 独立判断，并在可能时用 NumPy/SciPy 再核对。"
+    ],
+    "evidence": "七个框架中，765 个静态候选组经过 20202 对执行验证后，留下 676 个等价组和 2563 个 API。最终得到 72 个可独立复现的差异，其中 25 个维护者确认、23 个修复。去掉 execution validation 后，每 100 组 raw discrepancy 从 16.1 增至 25.4，说明伪等价会显著制造噪声。",
+    "limits": "普通输入上一致不能形式证明整个输入域等价。72 个案例中仍有大量待 triage，不能全部称为已确认框架 bug。方法对象是 DL API，不是 compiler IR。",
+    "relation": "Tile Fuzz 可先建立经过验证的共同域，再比较 PyTorch、CUDA、Triton、TileLang 和厂商 kernel。多实现分歧可以指导搜索，但不能把多数投票直接当作真值。"
+  },
+  {
+    "id": "specs-from-tests",
+    "title": "Can Formal Specifications Be Synthesized from Tests Alone?",
+    "zhTitle": "只根据测试和执行记录合成正式规格",
+    "arxiv": "2608.13240",
+    "track": "Tile Fuzz",
+    "secondary": "Agent 友好的 kernel DSL",
+    "conclusion": "论文让外部 LLM 只看接口、单元测试和经过筛选的前后状态，提出 JML 候选合同；真实源码只在本地交给有界模型检查器。反例再变成新的行为证据，用于修正规格。它展示了从测试恢复合同的可行性，也暴露 verifier 支持范围会直接限制生成空间。",
+    "background": "测试只描述有限具体输入，正式规格希望概括所有合法调用。直接让 LLM 阅读源码会泄露实现，也容易把当前代码结构误当成需求；传统动态 invariant mining 又受到预定义谓词空间限制。",
+    "flow": [
+      "工程师先选择允许外部模型看到的字段。每次测试执行记录参数、调用前状态、调用后状态和返回值或异常。",
+      "LLM 先根据测试断言提出前置条件、后置条件和可修改状态，再从重复 trace 中补充没有被 assertion 显式检查的关系。",
+      "本地 JJBMC 读取真实实现，寻找实现允许但候选规格禁止的行为；所有历史 observation 也必须被候选规格接受。",
+      "counterexample 被整理成新的 observation，LLM 最多三轮修正规格。没有证据的推断只能保留为 hypothesis。",
+      "最终通过表示当前有界范围内未发现冲突，并不代表规格已经完整描述全部未观察行为。"
+    ],
+    "evidence": "22 个 JJBMC 可处理的 SpecGenBench 任务中，11 个成功；7 个第一轮通过，4 个经验证反馈修正。9 个失败来自模型生成了标准 JML 合法、但当前 verifier 不支持的量化或 model-field 表达，另 2 个因反例信息不足没有收敛。",
+    "limits": "系统假设旧实现可信，可能把旧 bug 学成规格。BMC 只有有限展开，关键字段若未记录就无法恢复。样本只有 22 个，是 NIER 可行性研究。",
+    "relation": "Trace2TileContract 可以从现有 kernel 测试和 IR/runtime trace 提出 shape、dtype、tail、DMA 与生命周期候选规则，再由本地静态分析、symbolic checker 和 mutation strength 验证。Agent 的合同语言应限制在 verifier 真正支持的子集。"
+  }
+]
