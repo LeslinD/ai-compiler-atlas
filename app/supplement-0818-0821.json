@@ -1,0 +1,122 @@
+[
+  {
+    "id": "barrier-free-sync",
+    "title": "A Barrier-Free Synchronization Algorithm for Multi-Engine AI Accelerators",
+    "zhTitle": "面向多引擎 AI 加速器的无全局屏障同步",
+    "arxiv": "2608.13757",
+    "track": "Tile for DSA",
+    "secondary": "TileLang-TPU",
+    "conclusion": "论文研究 DMA、Tensor、Vector 等多个异步引擎在动态循环中怎样保持最小必要同步。它不再每轮插入全引擎 barrier，而是把 producer-consumer 的循环距离转换成运行时信号量阈值，使真正有依赖的 consumer 等到刚好安全的时刻。",
+    "background": "直线代码中，consumer 可以等待 producer 完成到固定计数。循环以后同一条 producer 指令会反复执行，固定阈值无法区分第几轮。每轮 barrier 虽然安全，却会清空跨迭代流水，并让与依赖无关的执行引擎一起等待。",
+    "flow": [
+      "输入是多引擎 ISA 程序和已分析的数据依赖图。每条依赖记录 producer、consumer、共享循环与跨迭代距离。",
+      "consumer 当前迭代向量减去依赖距离，得到真正需要等待的 producer 迭代；如果落到循环开始以前，本次等待值为零。",
+      "producer 每次 retire 都增加全局可见完成计数；每层循环仅维护当前父轮次内的 trip counter 和从 kernel 开始单调增加的 entry counter。",
+      "根据 producer 所在循环和距离，编译器计算准确 waitVal，并用无分支 mask 使无历史依赖的迭代直接通过。",
+      "同一 loop、同一 engine 中的多个 producer 共享 semaphore。超出当前可表达依赖类别时，系统安全回退到 barrier，而不生成近似等待。"
+    ],
+    "evidence": "方法在真实 AWS Trainium 2、单 NeuronCore 上测试 MatMul、RMSNorm、FlashAttention、AdamW 和动态 Dropless MoE。真实 ML kernel 相对 barrier 减少 10%–45% 延迟，AddManyLoop 约快 3.3 倍。TiledMatmul 显示极短内层循环中控制开销可能成为瓶颈，选择性展开后才能达到更好结果。核心 per-loop 分配约有 1.5 万行 Lean 证明。",
+    "limits": "benchmark 数量有限，instruction schedule 被固定，依赖图由人工从 ISA 程序提取。证明不覆盖全部资源优化，复杂多层依赖仍会回退。论文也没有公开完整实现仓库。",
+    "relation": "Tile IR 可以表达 producer、consumer、buffer、共享 loop 和 iteration distance，再由不同 DSA 后端降低成 event、semaphore、静态展开或 barrier。高层不应手写硬件 semaphore 编号。"
+  },
+  {
+    "id": "integer-alibi",
+    "title": "The Integer Alibi: Localizing Cross-Kernel Divergence in INT8-Quantized LLM Inference",
+    "zhTitle": "Integer Alibi：定位 INT8 推理中的跨 kernel 数值差异",
+    "arxiv": "2608.13756",
+    "track": "Tile Fuzz",
+    "secondary": "Agent 友好的 kernel DSL",
+    "conclusion": "论文利用 INT8×INT8 到 INT32 的精确整数累加建立强 Oracle。在不溢出的前提下，tile、split-K 和 reduction tree 不应改变 INT32 accumulator。作者通过捕获相同量化 operand 和 power-of-two scale，把 CUTLASS 与 Triton 的差异缩小到 scale 乘法与 BF16 舍入。",
+    "background": "普通 differential test 只能告诉我们两个 scaled INT8 GEMM 输出不同，却不能判断差异来自整数 Tensor Core、累加顺序、量化输入、scale fusion 还是输出 cast。统一放宽 rtol 会掩盖真正不应存在的整数阶段错误。",
+    "flow": [
+      "固定模型、硬件、vLLM 版本、prompt 和 greedy decoding，只替换 CUTLASS 与 Triton INT8 linear kernel。",
+      "逐层捕获完全相同的 INT8 activation、weight 和 scale，让两个 kernel 在相同 operand 上独立运行，排除上游量化差异。",
+      "检查 16256K 小于 2^31 的无溢出条件，并用 FP64 模拟确认实际 accumulator 绝对值小于 2^24，使 INT32 到 FP32 也精确。",
+      "将 weight scale 临时换成二的整数幂。满足正常数和不溢出的前提时，该乘法只移动指数，不应因运算结合方式产生差异。",
+      "power-of-two probe 逐位一致、真实 scale 仅相差一个 BF16 ULP 后，作者再用 teacher forcing 研究这些微小差异何时造成 token flip。"
+    ],
+    "evidence": "在 RTX 4090、vLLM 0.27.1、Qwen3-1.7B/8B W8A8 上，196 和 252 个 INT8 linear layer 全部满足 bitwise-safe 预测，并在 power-of-two scale 下 196/196 与 252/252 逐位一致。真实 scale 下只有 8 和 10 层完全一致，但所有有限差异不超过 1 个 BF16 ULP。16384 个 teacher-forcing 位置中 4.7% 发生 token flip，主要集中在 top-1/top-2 margin 很小的位置。",
+    "limits": "只有一张 RTX 4090、一个模型家族和一对主要 INT8 kernel。逐层实验以 M=512 为主，decode 没有同等统计强度。论文也没有用故意写错的 kernel 测量各项 conformance check 的检出率。",
+    "relation": "低精度 Tile Fuzz 应按计算阶段建立 Oracle。精确整数 accumulator 使用 bitwise equality，scale 与 cast 使用 ULP 合同，真正涉及浮点 reduction 时才使用随长度变化的数值误差界。"
+  },
+  {
+    "id": "volta",
+    "title": "Equivalence Checking of ML GPU Kernels",
+    "zhTitle": "Volta：机器学习 GPU kernel 的形式等价检查",
+    "arxiv": "2511.12638",
+    "track": "Tile Fuzz",
+    "secondary": "Agent 友好的 kernel DSL",
+    "conclusion": "Volta 直接读取参考与优化 kernel 的 PTX，检查共享内存访问、同步、数据竞争和死锁，再通过符号执行把输出写成关于输入的数学表达式。对于 structured-CTA 子集，它利用合流性避免枚举所有线程交错，并证明两份 kernel 在数学实数模型下等价。",
+    "background": "随机测试只能覆盖有限输入，也难以暴露依赖特定线程交错的 race。GPU 形式等价又面临几百线程、共享内存和 barrier 的巨大状态空间。很多 ML kernel 具有静态 shape、静态地址和固定 CTA 职责，这为更强检查提供了结构条件。",
+    "flow": [
+      "输入是两份 PTX 和固定 launch configuration。检查器先确认 tensor size、branch target 和地址能够由 shape 与 thread ID 静态确定，且优化没有改变 CTA 的职责。",
+      "每个输入元素被替换成符号，PTX 指令、寄存器和共享内存读写在固定 round-robin 调度下执行。",
+      "若未发现 data race 或 deadlock，论文的合流性结果保证其他合法线程调度得到同一符号状态，不必枚举全部交错。",
+      "参考与优化 kernel 的每个输出元素都被化简成数学表达式，针对多项式和指数形式进行规范化比较。",
+      "工具返回 race/deadlock、不等价、在当前模型内等价，或者明确 unsupported；不会把无法分析的异步或动态程序当作通过。"
+    ],
+    "evidence": "v3 公开评测包括人工 CUDA、Claude Code 和 TileLang 生成 kernel。TileLang f16 MatMul 的 32×32×32、64×32×32、64×64×32 tile 全部通过，最大一组验证约一分钟。工具还能发现普通测试和作者实验中的 Compute Sanitizer 都未报告的 shared-memory 越界。公开仓库约 41 次提交，并提供 39 个 benchmark 的复现流程。",
+    "limits": "浮点元素被建模成数学实数，因此不证明 IEEE-754 逐位或误差界。当前不支持数据相关地址、跨 CTA 重新分工、TMA、wgmma 和现代异步 pipeline。",
+    "relation": "KernelVerifierRouter 可以让 structured-CTA 候选先接受 Volta，再继续做 BF16/FP8 数值合同和真实框架验证；unsupported 候选进入动态 Oracle，不能把所有 kernel 交给同一检查器。"
+  },
+  {
+    "id": "ptxbench",
+    "title": "PTXBench: Benchmark and Adapt LLMs for GPU Kernel Optimization with Architecture-specific PTX",
+    "zhTitle": "评测大模型能否真正使用 Hopper 与 Blackwell 新 PTX",
+    "arxiv": "2608.17379",
+    "track": "Agent 友好的 kernel DSL",
+    "secondary": "Tile for DSA",
+    "conclusion": "PTXBench 将三种能力分开测量：kernel 是否功能正确，最终 SASS 是否真正执行指定的新硬件指令，以及使用后是否接近 cuBLAS、cuDNN 或 FlashInfer 性能。实验说明模型经常能写出正确普通 CUDA，却不会正确编排 Blackwell 的新执行机制。",
+    "background": "在源码或 PTX 中出现一条新指令，不代表最终机器码保留它，也不代表当前 workload 真的执行该路径。即使目标指令运行过，也可能只承担很少工作或因 layout、同步和流水不佳而更慢。",
+    "flow": [
+      "每个任务固定 workload、目标 GPU、前沿库基线和必须使用的 PTX 指令族。Agent 从零生成 CUDA 与 inline PTX。",
+      "候选依次通过 nvcc、内存安全、运行时和数值正确性，只有功能正确的程序才检查新硬件能力。",
+      "系统在最终 SASS 中搜索指定指令族，再使用 Nsight Compute 确认 predicate-enabled thread count 大于零，排除死代码中的伪使用。",
+      "目标指令成功后仍继续与前沿库测 latency，分别报告功能正确率、目标指令正确率和相对性能。",
+      "Fixit 数据由失败 kernel、真实执行反馈、修复理由和正确 kernel 组成，用于训练模型从硬件错误中修复，而非只模仿最终代码。"
+    ],
+    "evidence": "Claude Opus 4.8 在 B200 GEMM 的功能正确率为 88.5%、目标指令正确率 80.2%；MHA backward 功能正确率 91.7%，目标指令正确率只有 10.4%。只给 GPU 参数时目标指令成功为零，加入 PTX template 后 19.8%，再加入 architecture contract 后 38.5%。B200 attention backward 中 Triton 相对前沿库为 0.484/0.436，直接 CUDA-PTX 只有 0.133/0.015。",
+    "limits": "任务集中在 H100/B200 的 BF16 GEMM 与 Attention，功能检查主要使用 allclose 1e-2，没有合同级特殊值和确定性覆盖。知识包达到两三万 token，扩展到很多 DSA 的成本未验证，代码也未公开。",
+    "relation": "Architecture Feature Contract 应分别记录规格声明、编译生成、运行时指令执行和真实性能。合同负责什么组合合法，搜索与 profiler 继续回答哪个合法组合最快。"
+  },
+  {
+    "id": "kernelarc",
+    "title": "KernelArc: A Multi-Agent Framework for GPU Kernel Optimization",
+    "zhTitle": "KernelArc：多路线、多 Agent 的 GPU kernel 优化",
+    "arxiv": "2608.17071",
+    "track": "Agent 友好的 kernel DSL",
+    "secondary": "Tile for DSA",
+    "conclusion": "KernelArc 用多个 Agent 从库调用、数据搬运、Tensor Core、融合、低精度、归约和调度等不同方向搜索。Agent 不共享全部聊天历史，只共享真实 benchmark 验证过的 win 与 trap；候选是否正确和更快由外部确定性 guard 决定。",
+    "background": "单个 Agent 一旦在某种 tile、库算法或数据流附近取得早期成功，后续容易一直局部微调，把当前轨迹上限误认为硬件上限。多个 Agent 若完全共享历史又会趋同，完全不共享则重复踩相同失败。",
+    "flow": [
+      "系统根据任务启动具有不同性能视角的 Agent，包括 library、memory、compute、fusion、precision、reduction、scheduling 和 B200 native kernel。",
+      "每个 Agent 独立修改源码，外部 guard 先做便宜接口检查，再在真实 GPU 上运行全部 workload。",
+      "只有正确并超过当前 incumbent 规定阈值的候选才更新最优实现；模型不能自行解释 benchmark 为成功。",
+      "成功经验记录操作、shape、speedup 与原因，失败经验记录错误和为何不值得继续。默认只保留有限数量 win/trap，不共享全部日志。",
+      "搜索停滞后，系统要求转向不同算法、DSL、layout 或实现家族，但仍受统一候选预算和 evaluator 约束。"
+    ],
+    "evidence": "固定 4096³ BF16 GEMM 的 H100 深度搜索达到 766 TFLOPS，比论文同协议下 cuBLAS 742 TFLOPS 高约 3.2%，但只代表一个 shape。SOL-ExecBench case study 中若干任务显著提升。FI-014 的五条 trajectory 消融里，Single、Multi-bounded、Multi-unbounded 几何平均 speedup 为 142.6、182.7、290.8 倍，但样本少且多项系统因素同时变化。",
+    "limits": "没有运行全部 235 个 SOL-ExecBench 任务，排行榜具有时间性。多 Agent 消融没有固定 token、wall time 与单一组件，不能将收益单独归给 Agent 数或共享记忆。系统代码也未公开。",
+    "relation": "长期 Kernel Agent 应把硬件合同与实测经验分开管理。合同描述什么合法，win/trap 描述什么在特定硬件和 shape 上有效；两类知识的可信来源不同。"
+  },
+  {
+    "id": "spectrum",
+    "title": "SpecTrum: Specification-Guided Differential Fuzzing for Ethereum Consensus Clients",
+    "zhTitle": "SpecTrum：规格前提引导的差分 Fuzzing",
+    "arxiv": "2608.17738",
+    "track": "Tile Fuzz",
+    "secondary": "Agent 友好的 kernel DSL",
+    "conclusion": "SpecTrum 不只统计代码行或分支是否执行，而是把规格中的溢出、索引、长度和状态合法条件显式写成 premise，再检查每条条件是否同时被测试为 true 和 false。未覆盖条件通过输入来源追踪和边界求解转成定向测试。",
+    "background": "一段代码可以具有很高 branch coverage，关键合法性条件却长期只在一侧成立。例如所有整数都远离溢出，所有列表索引都有效。随机选择字段再塞极值也很浪费，因为大型状态中真正影响某一条件的字段很少。",
+    "flow": [
+      "作者将 Ethereum Python consensus specification 机械化为规则式 Consensus-SpecTec，把依赖异常的溢出、索引和除零条件补成显式 premise。",
+      "对每条可反转 premise，记录已有官方测试是否出现过 true 和 false；长期未出现 false 的条件进入 fuzzing 队列。",
+      "输入 provenance 追踪 premise 中运行时值来自哪个 state field；条件被取反后，系统求出相反区间和相关字段。",
+      "生成器优先选择区间边界、刚跨过边界的 transition value 和区间内部代表值，而不是在全部字段中随机 mutation。",
+      "同一输入同时运行 reference specification 和五个独立客户端；规格只指导生成，最终 accept/reject、post-state 与 crash 差异由多实现 Oracle 判定。"
+    ],
+    "evidence": "机械化规格含 392 条 premise，其中 104 条来自隐式异常条件。官方测试只让 281 条可反转 premise 中 130 条出现过 false，加入 SpecTrum 后达到 256 条。相同 21444 测试预算下，Random、Extreme、SpecTrum 分别覆盖 193、187、256 条 premise，并发现 12、16、27 个跨客户端差异。",
+    "limits": "Consensus-SpecTec 首次机械化约花三个月。生成器主要做单字段 mutation，多字段组合和跨函数 provenance 仍是主要缺口。27 个差异已报告但尚未全部由维护者确认。",
+    "relation": "TilePremiseFuzz 可将 BK 倍数、LMEM 容量、DMA 对齐、last-read/next-write 和 accumulator dtype 变成 premise。规格负责指出测哪里，数学 reference、跨后端和变形关系负责最终判错。"
+  }
+]
