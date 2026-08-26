@@ -1,0 +1,162 @@
+[
+  {
+    "id": "fiber",
+    "title": "A Thread-Register Decoupled GPU Execution Model for Efficient Tensor Computation",
+    "zhTitle": "FIBER：执行实例与寄存器所有权解耦的 GPU 模型",
+    "arxiv": "2608.19628",
+    "track": "Tile for DSA",
+    "secondary": "Agent 友好的 kernel DSL",
+    "conclusion": "FIBER 重新拆开传统 GPU 线程模型中长期绑定的两件事：谁负责执行，以及谁拥有片上寄存器。更高层的 FIBER-thread 管理寄存器和其他资源，轻量 fiber 或 weft 负责实际计算。不同阶段可以使用不同数量的执行实例，中间 tile 也可以直接通过共享寄存器视图交给下一阶段。",
+    "background": "传统 SIMT 线程同时拥有程序状态和私有寄存器。一个 kernel 中 Tensor Core 阶段、softmax 阶段和向量阶段需要的寄存器与并行度差异很大，但 thread 数和寄存器预算通常在启动后基本固定。Hopper 的 warp specialization 能缓解这一问题，仍然难以在阶段之间自由改变并行度和直接复用寄存器数据。",
+    "flow": [
+      "输入仍然是张量 kernel。系统保留负责资源管理的 FIBER-thread，再生成不独占私有寄存器的 fiber，并以 32 lane 的 weft 调度执行。",
+      "共享寄存器池保存中间 tile。Tensor Core 阶段写出的 score 可以由后续 softmax weft 直接读取，不必总是写入 shared memory 再搬回。",
+      "kernel 可以在不同阶段改变参与工作的 fiber 数量，使寄存器需求高的矩阵阶段和并行度需求高的向量阶段分别使用更合适的执行规模。",
+      "硬件为寄存器维护 ready 与 in-use 状态。consumer 只能读取已经写完的数据，producer 也不能在最后一次读取结束前覆盖存储。",
+      "编译器负责共享寄存器分配、跨硬件子分区访问和必要的 shared-memory 回退，使程序员不用直接管理物理寄存器。"
+    ],
+    "evidence": "主要结果来自 GTSim 周期级模拟器。混合精度 LLM serving 相对 Ampere、Hopper、Blackwell 风格 baseline 的端到端加速分别为 2.25、1.80 和 2.09 倍；原始 FP16 serving 在 Ampere 风格 baseline 上约为 1.15 倍。新增硬件经过 Verilog 逻辑综合，估算每 SM 增加 0.0053 mm²，面积低于 0.1%、功耗低于 0.4%。",
+    "limits": "核心性能证据来自模拟器，没有真实 FIBER 芯片。FIBER-native workload 主要由作者手工映射，尚未证明成熟编译器能从普通 CUDA、Triton 或张量 IR 自动生成同等质量的执行计划。纯 GEMM 的收益也较小。",
+    "relation": "对 Tile for DSA，最值得抽象的是把逻辑 Tile、存储位置、执行者集合、当前并行度和生命周期分开表示。同一块数据可以留在 LMEM 或共享寄存器中，由 Tensor、Vector 等不同执行单元在不同阶段接管。"
+  },
+  {
+    "id": "feedback-evolution-audit",
+    "title": "Auditing and Decomposing Feedback-Driven Evolution in LLM Test Generation under the Oracle Problem",
+    "zhTitle": "审计反馈驱动的大模型测试演化与 Oracle 问题",
+    "arxiv": "2608.19626",
+    "track": "Tile Fuzz",
+    "secondary": "Agent 友好的 kernel DSL",
+    "conclusion": "论文没有提出新的测试生成器，而是审计“执行反馈让 Agent 持续进化”这一常见主张。它发现，单一 accepted program 给测试补答案会奖励大量非法输入；多轮方法也常因尝试了更多候选而看起来更强。经过多实现 Oracle 审计、候选预算匹配和反馈安慰剂对照后，细粒度反馈收益并不稳定。",
+    "background": "测试生成系统常让模型给出输入和期望输出，再用一个已接受程序重算答案。这样能够修正模型写错的输出，却没有证明输入属于题目合法域。无效输入如果恰好杀死历史错误程序，就会得到错误的正奖励。多轮方法还可能只是因为生成了更多候选而胜过 one-shot。",
+    "flow": [
+      "不同生成方法先按原协议运行，并使用一个固定 accepted program 给每条输入产生期望输出。方法根据能杀死多少 search-fold fault 选择并冻结测试 archive。",
+      "archive 冻结后，其他独立 accepted implementations 再运行相同输入。只有它们都能执行且输出一致的测试，才保留到审计后的结果。",
+      "Evolve 使用一次初始生成和六个确定性 mutation，共九个候选位置；Matched 使用三次独立生成，也得到九个候选位置，用于区分 mutation 收益与单纯增加候选数。",
+      "反馈安慰剂保留轮数、历史长度和粗略进展信息，却打乱具体 input 与 fault 的对应关系，用于判断模型是否真正利用了细粒度反馈。",
+      "最后重新计算审计后的 fault kill，并分别报告 Oracle 造成的虚假增益、相同候选预算下的搜索收益和真实反馈相对 placebo 的差异。"
+    ],
+    "evidence": "external cohort 中，模型直接生成的 expected output 与 accepted panel 一致率只有 27.79% 和 50.12%，整套测试全部 panel-confirmed 的比例仅 2.53% 和 5.07%。Qwen2.5 的 Evolve 相对 One-shot 表面提高 11.58 个百分点，审计后只剩 2.12；Qwen3.5 从 12.57 降到 2.18。相同九候选预算下，独立 Matched 又比 Evolve 高 10.91 和 6.01 个百分点。",
+    "limits": "实验是 Python exact-output 算法题，刻意排除了浮点 tolerance 和特殊 checker，不能直接量化到 GPU kernel。多个 accepted implementation 一致也不是形式真值。实验只覆盖两个 Qwen 模型，论文结论是没有观察到稳健收益，并非证明所有反馈都无效。",
+    "relation": "Tile Fuzz 需要把测试合法性、Oracle 可信度、候选预算和反馈内容分别控制。生成更多 discrepancy 不能直接作为奖励；应先报告 valid-test yield，再用独立实现、数学规格或变形关系事后审计。"
+  },
+  {
+    "id": "hypercut",
+    "title": "HyperCut: Fast Inter-Layer Scheduling via Directed Hypergraph and Early Filtering",
+    "zhTitle": "HyperCut：用有向超图和早期筛选加速跨层调度",
+    "arxiv": "2608.19296",
+    "track": "Tile for DSA",
+    "secondary": "Agent 友好的 kernel DSL",
+    "conclusion": "HyperCut 处理 tiled accelerator 上的整图调度搜索。它不等所有层内 tile、PE 和路由细节确定后才评价候选，而是在高层已经决定 layer group、物理子网格和 batch 划分时，用便宜模型估算计算、NoC、DRAM 和流水成本，提前淘汰明显较差的方案。",
+    "background": "大规模分块加速器既要决定哪些网络层并行、各层占用哪块物理网格，也要继续决定单层内部的输出分块和 PE 映射。传统方法先完成跨层探索，再对大量候选运行昂贵层内搜索。深网络中，很多差方案直到后期才被发现。",
+    "flow": [
+      "输入是 DNN 计算图、二维计算 tile 网格和 batch。系统先将普通 DAG 转成有向超图，使一次 multicast 不会被重复计算成多条独立通信。",
+      "搜索状态同时保存 layer group、它占用的矩形物理子网格、并行或顺序执行关系和 sub-batch，避免逻辑切图与物理映射分开决定。",
+      "beam search 逐步把大 layer group 拆小，并检查当前分组是否满足数据依赖。候选还按性能、结构多样性和探索名额共同保留。",
+      "搜索前期使用廉价 evaluator，根据 MAC、NoC hop、DRAM 流量、数据驻留和流水 setup/steady/drain 估分，不展开完整层内映射。",
+      "只有 group 已经缩成单层并通过早筛的候选，才进入昂贵的 4D tensor 切分、PE 映射和精细路由评价。"
+    ],
+    "evidence": "论文在建模的 8×8 和 16×16 tiled accelerator 上评估 Darknet19、ResNet50、GPT2 Decode 和 603 层 PNASNet。相对 SET，摘要报告几何平均 2.0 倍性能改善并减少 80.47% 探索时间。超深 PNASNet 上最终 EDP 可能轻微退化，主要优势更稳定地体现在搜索成本。",
+    "limits": "主要结果来自硬件模型和分析式 evaluator，没有真实 64 或 256 tile 芯片测量。论文缺少完整组件消融，也没有公开实现；对动态 MoE、稀疏图和强运行时控制的适用性尚未验证。",
+    "relation": "对 Kernel Agent，便宜 evaluator 不必精确预测最终微秒数，只需判断候选是否值得付出完整编译和真机测量成本。可以在图级资源分配、kernel schedule 和机器码之间设置不同精度的评价层。"
+  },
+  {
+    "id": "hype-meets-reality",
+    "title": "Hype Meets Reality: Large Language Models as Mutators in Search-based Automated Program Repair of Simulink-Stateflow Models",
+    "zhTitle": "Hype Meets Reality：自由大模型变异并未胜过领域结构化算子",
+    "arxiv": "2608.19347",
+    "track": "Tile Fuzz",
+    "secondary": "Agent 友好的 kernel DSL",
+    "conclusion": "论文将 FlowRepair 中大部分表达式级结构化 mutation 替换为 LLM 自由生成，同时保留相同故障定位、搜索与真实仿真评价。结果显示，更大的生成空间没有带来更强修复能力。结构化领域算子在昂贵 evaluator 下提供了更高的有效候选密度。",
+    "background": "Stateflow 修复可能只需替换比较符号，也可能要恢复一个依赖领域变量的算术表达式。传统 mutation library 覆盖有限，却明确规定修改位置、动作类型和保持不变的结构。自由 LLM label mutation 表达力更强，也更容易一次改变多个相关因素。",
+    "flow": [
+      "输入是带故障的 Stateflow 模型、通过与失败测试，以及 Tarantula 排出的可疑 state 和 transition。",
+      "原 FlowRepair 使用 15 类领域 mutation。实验将大部分 label-level 算子换成 LLM，只保留五类必须修改图结构的人工算子。",
+      "LLM 只看到当前组件的 label、可用变量和少量示例，生成新的局部表达式；它看不到完整状态图，也没有收到仿真中的故障持续时间与严重度反馈。",
+      "每个候选继续运行真实 Stateflow 仿真。完全通过测试的候选进入 plausible archive，部分改善的候选进入局部搜索。",
+      "工程师再人工检查所有 plausible patch，区分“测试通过”和“真正符合开发者修复语义”。"
+    ],
+    "evidence": "19 个真实 Stateflow 故障、每个方法五次运行、每次一小时。原 FlowRepair 对 18/19 产生 plausible patch，对 16/19 产生 valid patch；GPT-5.5、GPT-5.4-mini 和 GPT-4.1-mini 三个版本都只修复 4/19。pacemaker_2 中 GPT-5.5 能将固定值恢复为 `VENT_Sensitivity / 5 * 100`，说明模型对未在 mutation library 中枚举的局部表达式仍有价值。",
+    "limits": "各方法固定 wall-clock，而不是固定实际仿真候选数，因此结果同时包含 mutation 质量和 LLM 推理延迟。实验只覆盖 Stateflow/CPS、每个故障五次，部分 few-shot 示例可能泄漏修复模式。",
+    "relation": "Tile Fuzz 第一版更适合使用有类型、有前置条件和参数域的 schedule action。LLM 可负责选择、排序和实例化 action，只有现有动作长期无法表达高价值修改时，才受控提出新动作。"
+  },
+  {
+    "id": "loreley",
+    "title": "Loreley: Repository-Scale Program Evolution with Quality-Diversity Search",
+    "zhTitle": "Loreley：仓库级质量—多样性程序演化",
+    "arxiv": "2608.19703",
+    "track": "Agent 友好的 kernel DSL",
+    "secondary": "Tile Fuzz",
+    "conclusion": "Loreley 保存完整 Git repository state，并通过 MAP-Elites 保留多个结构不同的搜索分支。它清楚证明 archive 的确保存并重新利用了单一路径会丢弃的候选，但在固定 48 次候选评估预算下，没有显著胜过更简单的顺序维护当前最佳版本。",
+    "background": "顺序搜索能累积多轮优化，却会丢掉暂时较慢、以后可能有用的分支；每次从根版本独立搜索能保持多样性，却难以积累。质量—多样性搜索希望同时保留多代改进和不同路线，但额外分支也会消耗有限的评估预算。",
+    "flow": [
+      "每个候选是一个可重新构建的 Git commit，并保存 parent、inspiration、evaluator 结果和 artifact identity。",
+      "代码转换为 1536 维 embedding，再通过 PCA 压成三个坐标；每个坐标四档，共形成 64 个 MAP-Elites cell，同一格保存有界 Pareto front。",
+      "下一轮 Agent 可从 archive 选择父版本，也可读取两个其他状态作为 inspiration；顺序基线始终从当前冠军继续，独立基线每次从冻结根版本开始。",
+      "外部 evaluator 负责构建、正确性、资源和性能。失败 job 同样消耗 physical candidate budget，只有有效候选可以进入 archive。",
+      "搜索结束后，系统先用 training 选 finalist，再用 validation 选固定 winner，最后在 Agent 看不到的 holdout 上测最终表现。"
+    ],
+    "evidence": "七个配对 Zstandard block，每种策略固定 48 次 physical candidate job。Independent Root 平均提升 0.502%、Loreley QD 0.824%、Sequential Champion 0.960%；QD 与两条基线的置信区间都跨过零。机制确实启动：4/7 个 QD winner 的 parent lineage 包含非冠军分支，计入 inspiration 后为 6/7。",
+    "limits": "正式策略对照只有一个 repository，48-job horizon 可能较短；embedding descriptor、Pareto 保留、inspiration 与并发没有单独消融。公开仓库较完整，但项目仍标为 alpha。",
+    "relation": "Kernel Agent 研究应分别报告 archive 使用率和最终硬件收益，并固定真实编译或真机候选次数。比源码 embedding 更值得测试的 descriptor 是 tile、layout、memory traffic、pipeline 和指令组合等执行特征。"
+  },
+  {
+    "id": "breakguard",
+    "title": "BreakGuard: Towards Detecting Dependency Breaking Changes with LLM-Generated Tests",
+    "zhTitle": "BreakGuard：根据真实客户端调用位置生成依赖升级测试",
+    "arxiv": "2608.20167",
+    "track": "Tile Fuzz",
+    "secondary": "Agent 友好的 kernel DSL",
+    "conclusion": "BreakGuard 从客户端实际调用依赖库的位置生成 migration test。每个测试必须先在旧版本上编译、运行并通过，再原样迁移到新版本。论文同时发现，生成测试、真正进入发生变化的代码，以及拥有足够强的行为 Oracle 是三个不同问题。",
+    "background": "依赖升级中的 breaking change 不一定表现为 API 删除。方法签名可以完全不变，内部依赖、默认行为、异常和副作用却已变化。库自己的测试不知道某个客户端怎样组合 API，客户端已有测试又可能没有覆盖全部生产调用位置。",
+    "flow": [
+      "系统静态扫描客户端生产代码，找到直接调用目标依赖 API 的 focal method，并记录 call site、类型和周围类上下文。",
+      "LLM 根据 Minimal、Method 或 Class 三种上下文为每个 focal method 生成独立测试。",
+      "测试首先只在旧版本执行。不能编译、不能运行或本来就失败的测试被丢弃，避免把测试自身缺陷误报为升级回归。",
+      "同一测试原样放到新版本。旧版本通过、新版本失败时，记录编译、运行错误或 assertion failure。",
+      "作者继续分析未检测测试是否真正加载了变化 API，以及 detecting test 是依赖 crash 还是拥有 value-based behavioral assertion。"
+    ],
+    "evidence": "89 个真实 breaking update、5790 个 focal method。最佳 GPT-4o + Class 检测 27/89，即 30.3%；Qwen3-Coder Method/Class 为 20/89。平均 79.7% 无效测试来自编译失败。2111 个有效但未检测测试中，78.4% 甚至没有加载变化 API class。3566 个 detecting test 中 95.1% 是 runtime ERROR，真正 value-based assertion 只有 25 个，即 0.7%。",
+    "limits": "当前只验证 Java/Maven，使用静态 call site，难处理反射和动态加载。每个 focal method 只做单次生成，crash 型变化明显比静默行为变化容易检测。",
+    "relation": "可迁移到 TileLang、TPU SDK 和后端版本升级：先从真实 kernel 提取 target-specific focal usage，再要求测试在旧栈有效、在新栈复现变化，并用数学 reference、Tile contract 和 lowering trace 判断行为回归。"
+  },
+  {
+    "id": "artic",
+    "title": "Natural-Language Workflows Are Not Software Yet: Artifact-Driven Compilation for Reliable Agent Execution",
+    "zhTitle": "Artic：把自然语言 Agent 流程编译成显式产物与控制流",
+    "arxiv": "2608.21341",
+    "track": "Agent 友好的 kernel DSL",
+    "secondary": "Tile Fuzz",
+    "conclusion": "Artic 不让 Agent 直接执行一段越来越长的自然语言流程，而是将其编译成显式读写产物、分支和循环的小程序。编译器还能分析每一步的控制复杂度、上下文负担和仍然存活的中间结果，再通过静态检查、局部验证与场景 dry-run 检查编译后的流程。",
+    "background": "多轮 Agent 常把源码、工具输出、判断和历史全部塞进同一上下文。随着分支增多和 context compaction，模型容易使用错误版本的数据、忘记仍需保留的中间结论，或在分支汇合处读取根本没有生成的结果。",
+    "flow": [
+      "输入是领域专家写的自然语言工作流。编译器识别稳定信息单位，将其变成带结构和约束的 artifact，并为每一步声明 reads 与 writes。",
+      "顺序、条件和循环进入一个简单工作流语言，因此系统可以检查控制流汇合点是否缺少所需产物。",
+      "编译器估计控制复杂度、一次调用携带的上下文、compaction 时仍然存活的 artifact，以及显式保存过多 artifact 的成本；复杂步骤被拆成更局部的 Agent 调用。",
+      "确定性静态检查验证产物是否先定义后使用，局部验证义务分别检查中间产物和子流程是否保持原要求。",
+      "系统从目标逻辑提取原子条件，生成覆盖不同条件组合的 dry-run 场景，并比较原自然语言流程与编译流程的路径和最终产物。"
+    ],
+    "evidence": "488 个实例、11 个领域。GLM-4.7-Flash、GPT-OSS-120B、Qwen3-235B 上，Artic 任务完成率分别为 85%、82%、85%，均高于直接执行自然语言流程。Medical 中跨模型一致率从 48% 提高到 80%，pass^10 从 16% 提高到 72%；单步输入 token 平均减少 63%，输出减少 50%。完整消融为 88%，去掉 dry-run 为 80%，只保留优化为 72%，无优化但有验证为 48%，全部去掉为 0%。",
+    "limits": "研究对象是一般 Agent workflow，不是编译器或 kernel。faithfulness 仍部分依赖 LLM dry-run，不是全输入形式证明。约 5.9K 行 Python 实现尚未公开。",
+    "relation": "Kernel Agent 可以将 KernelSpec、KernelIR、Binary、Diagnostic、CorrectnessEvidence、Profile 和 Incumbent 变成带版本和依赖的一等 artifact。修改 IR 后，旧 binary、正确性与 profile 自动失效；context 只携带仍然存活的证据。"
+  },
+  {
+    "id": "ai-with-authority",
+    "title": "AI with Authority, from Application to Silicon",
+    "zhTitle": "从应用、已验证编译器到芯片的高自治 Agent 案例",
+    "arxiv": "2608.21356",
+    "track": "Tile for DSA",
+    "secondary": "Agent 友好的 kernel DSL",
+    "conclusion": "这篇单人案例研究展示一名形式化方法专家如何在五周内组织多个 Agent，从应用、已验证编译器和执行环境推进到 RISC-V Tiny Tapeout 提交。最值得关注的不是开发速度，而是每项结论都绑定规格、机器检查证据和明确的信任边界。",
+    "background": "LLM 可以快速生成代码、RTL 和证明尝试，但如果人类必须逐行复核全部产物，生成速度只会制造更大的 review backlog。形式工具可以检查“实现是否满足规格”，却不能替代人判断“规格是否真正表达目标”。",
+    "flow": [
+      "工作开始前先固定人类目标和接受条件，并通过对抗审查寻找遗漏与矛盾，避免实现失败后偷偷改变成功标准。",
+      "每项任务同时产生 implementation、specification、机器可检查证明、对抗测试和更易读的 certificate；系统还证明完整规格蕴含该 certificate 中的简化性质。",
+      "数学和部分系统性质由 Lean 4 proof kernel 裁决；Verilog 与生成 artifact、综合网表与 Verilog 之间使用 Yosys SAT equivalence，论文明确区分这些检查的信任边界。",
+      "append-only ledger 记录事实、测量、设计判断、撤回与错误；Agent 有预算，耗尽后必须停止并报告失败。",
+      "人类保留规格解释、主要设计决策和不可逆外部动作，其余编写、证明和构建由 Agent fleet 完成。"
+    ],
+    "evidence": "论文报告 verified compiler 5067 行 Lean/13 文件，executive 与 application 11001 行 Lean，silicon verification flow 4251 行 Lean，证书 1884 行 Lean，Agent 编写 RTL 22679 行 Verilog/71 文件。902 个 sequential flip-flop 中 288 个，即 31.9%，可沿结构证据追溯到 kernel-checked Lean 生成逻辑。Salt 与 SaltWorks 公开仓库分别约有 2142 和 2081 次提交。",
+    "limits": "只有一名形式化方法专家和一个五周案例，没有受控 baseline 或组件消融。芯片仅已提交 Tiny Tapeout，预计 2027 年交付，目前没有真实 silicon 功能或性能测量。完整硬件验证也并非统一 Lean proof，中间存在明确 SAT-only 环节。",
+    "relation": "自动 DSA 后端应要求 Agent 提交 target capability specification、lowering、静态或形式证据、差分测试、真实硬件执行证据和性能测量，并分别保存每项证据的 checker 与适用范围，而不是统一标成 verified。"
+  }
+]
