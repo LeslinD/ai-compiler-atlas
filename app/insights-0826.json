@@ -1,0 +1,48 @@
+{
+  "date": "2026-08-26",
+  "title": "全局布局最优与最终机器码优化",
+  "signal": "Tensor Seeks Layout 用精确求解器把“布局搜索不够好”和“性能模型不够准”分开；AsmEvo 则从最终 AMDGPU 二进制继续寻找指令调度、等待与缓存机会。两篇共同说明，性能差距必须按布局、成本模型、下游 lowering 和机器码分层定位。",
+  "artifact": "LayoutSearchDiagnosis v0.1",
+  "papers": [
+    {
+      "id": "tensor-seeks-layout",
+      "title": "Tensor Seeks Layout: Formalizing Layout Selection for ML Compilers",
+      "zhTitle": "形式化机器学习编译器中的全局布局选择",
+      "arxiv": "2608.21555",
+      "track": "Tile for DSA",
+      "secondary": "TileLang-TPU",
+      "conclusion": "论文把计算图中每个张量的物理布局选择写成一个明确的全局组合优化问题，并证明一般情况为 NP-hard。更重要的是，精确求解器在当前目标函数上达到最优后，真实 Trainium 性能仍可能明显落后于人工规则。这说明当 heuristic 已经接近目标函数最优时，下一步应优先修正成本模型，而不是继续堆更复杂搜索。",
+      "background": "图级布局选择决定不同算子之间的张量采用什么物理表示，例如维度顺序或 Trainium 的片上分区维度。它不同于 kernel 内元素到 lane 的布局，也不同于 LMEM 中 buffer 的具体地址分配。局部最快布局可能导致后续大量转换，因此需要全图考虑。",
+      "flow": [
+        "输入是一张机器学习计算图。每个张量都有有限的合法布局集合，每个算子都给出不同输入输出布局组合的合法性和预计执行成本。",
+        "旧方法通常按算子局部选择，或使用向前传播、贪心和多年人工规则。它们能够工作，却无法量化距离当前成本模型的全局最优还有多远。",
+        "论文把所有算子执行成本与必要布局转换成本相加，形成统一目标。多个消费者共享同一种转换时只计算一次，因此问题具有全局依赖。",
+        "对树宽较小的数据流图，作者使用树分解动态规划精确求解；对一般图，将合法性编码为硬条件、成本编码为软权重，交给加权最大可满足性求解器。",
+        "以 MatMul—Reduce—Add 为例，row-major 能让 MatMul 和 Add 直接衔接，却让列归约跨步访问；转置布局使 Reduce 更快，但末尾需要恢复输出布局。求解器比较的是全局收益与转换代价。"
+      ],
+      "evidence": "作者把求解器接入 AWS Neuron Graph Compiler，并在真实 Trainium trn1.32xlarge 上评估超过 200 个模型配置，图规模为 43 至 10,056 个算子。92% 的图树宽不超过 4；MaxSAT 约 90% 的模型能在 10 秒内求解。局部和贪心策略相对生产规则平均约慢 20%，最坏接近 5 倍。",
+      "limits": "精确最优只针对论文写下的成本目标。布局选择发生在 fusion、tiling、指令调度和内存分配之前，早期模型没有完整看到后续 DMA 与小块传输，因此 solver 可能精确利用模型误差。",
+      "relation": "对 Tile for DSA，最重要的实验顺序是先建立 exact objective oracle，再分别测 objective gap、硬件 gap 和下游 DMA。只有搜索 gap 仍然大时才值得研究 Agent 搜索；若 objective 已接近最优但硬件很差，应转向成本模型诊断。"
+    },
+    {
+      "id": "asmevo",
+      "title": "AsmEvo: Agentic Assembly-Level Optimization of AMD GPU Kernels with Functional Equivalence Verification",
+      "zhTitle": "在 AMD GPU 最终二进制上进行 Agent 汇编优化",
+      "arxiv": "2608.20711",
+      "track": "Agent 友好的 kernel DSL",
+      "secondary": "Tile for DSA",
+      "conclusion": "AsmEvo 从已经部署的 AMD HSACO 二进制开始，依据硬件 profile 选择热汇编窗口，让 Agent 修改指令调度、等待计数、缓存提示和地址计算。所有候选先恢复完整 code object、保持 ABI 并通过差分验证，之后才允许测性能。",
+      "background": "Triton、HIP 或高层 DSL 编译结束以后，最终机器码中仍可能留下长依赖、保守等待和不理想的 load 形式。回到源代码不一定能精确控制这些细节，但直接改汇编又容易破坏 metadata、寄存器资源、分支和 kernel 参数 ABI。",
+      "flow": [
+        "输入是一份 AMDGPU HSACO code object。系统恢复可重新组装的指令、ELF section、符号、kernel descriptor 和 metadata，并先做不修改内容的 round-trip 检查。",
+        "简单 kernel 根据 metadata 构造测试输入；复杂生产 kernel 则捕获真实 vLLM 或 SGLang dispatch，包括 kernel 参数、grid 和相关设备内存。",
+        "硬件计数器、指令采样和静态依赖共同确定 hot window。Agent 只修改这段相关汇编，而不是每轮读取和重写整个二进制。",
+        "候选重新组装后依次检查 ABI、资源、整数或不透明状态的逐位一致、浮点 tolerance、canary 和完整输出。错误候选没有性能奖励。",
+        "只有正确且超过噪声阈值的候选才进入已验证历史。生产 vLLM fused MoE 中，优化 HSACO 还能替换回 Triton cache 做真实框架验证。"
+      ],
+      "evidence": "KernelBench 30 个 kernel 中 29 个获得提升，几何平均 1.35 倍，最大 3.88 倍；生产 AITer kernel 几何平均 1.09 倍，vLLM/SGLang Triton JIT 二进制几何平均 1.18 倍，最大 1.343 倍。实验使用 MI308X 和 MI300X，每个 kernel 默认 4 个 GPU worker、12 小时搜索。",
+      "limits": "正确性是相对原始 binary 和已捕获 dispatch 的经验差分，不是全输入形式证明。当前恢复工具针对 AMD CDNA，搜索成本也很高；论文没有用同等 GPU 次数与简单局部搜索做完整系统消融。",
+      "relation": "AsmEvo 适合作为编译流程最后一层。高层 Agent 负责 tile、layout、fusion 和 pipeline，低层 Agent 只处理 profile 定位后的机器码窗口。低层 escape hatch 仍必须回到完整 kernel 重新验证。"
+    }
+  ]
+}
