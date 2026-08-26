@@ -1,12 +1,10 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import "./weekly.css";
 
 export const metadata: Metadata = {
-  title: "AI 编译器论文阅读",
-  description: "逐日阅读 AI 编译器、GPU kernel、编译器测试与程序分析论文。",
-  other: {
-    "codex-preview": "development",
-  },
+  title: "AI 编译器论文洞察",
+  description: "按日阅读 AI 编译器、Tile 抽象、新硬件后端、编译器测试与自动优化论文，并按周整理研究关系。",
   icons: {
     icon: "/favicon.svg",
     shortcut: "/favicon.svg",
