@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import "./weekly.css";
+import "./track-labels.css";
 
 export const metadata: Metadata = {
   title: "AI 编译器论文洞察",
